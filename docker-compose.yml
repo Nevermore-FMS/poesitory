@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+    backend:
+        build: backend
+        environment: 
+            - GITHUB_CLIENT_ID
+            - GITHUB_CLIENT_SECRET
+            - POESITORY_BASE_URL
+            - POESITORY_SECRET
+        depends_on:
+            - db
+            - cdn
+        ports: 
+            - 8080
+
+    db:
+        build: 
+            context: migrations
+            dockerfile: Dockerfile.db
+        environment: 
+        - POSTGRES_PASSWORD=${POESITORY_SECRET}
+        volumes:
+        - dbdata:/var/lib/postgresql/data
+        ports: 
+            - 5432
+
+    cdn:
+        image: minio/minio
+        volumes:
+            - cdndata:/data
+        environment: 
+            - MINIO_ROOT_USER=poesitory
+            - MINIO_ROOT_PASSWORD=${POESITORY_SECRET}
+        ports: 
+            - 9000
+            - 9001
+        command: ["server", "/data", "--console-address", ":9001"]
+
+
+    migrate:
+        build: migrations
+        depends_on:
+            - db
+        restart: on-failure
+        command: [ "-path", ".", "-database", "postgres://postgres:${POESITORY_SECRET}@db:5432/poesitory?sslmode=disable", "up" ]
+
+volumes:
+    dbdata:
+      external: true
+    cdndata:
+        external: true

@@ -1,0 +1,10 @@
+type Query {
+  me: User
+  searchPlugins(search: String = "", page: Int = 1): NevermorePluginPage
+  pluginVersion(identifier: String!): NevermorePluginVersion
+}
+
+type Mutation {
+  createPlugin(name: String!): MutatePluginPayload
+  uploadPluginVersion(id: ID!, version: String!, channel: String!): UploadPayload
+}

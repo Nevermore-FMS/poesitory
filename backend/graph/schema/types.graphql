@@ -1,0 +1,37 @@
+type User {
+    id: ID!
+    username: String!
+}
+
+type NevermorePlugin {
+    id: ID!
+    name: String!
+    owner: User
+    type: String!
+    latestShortIdentifier: String!
+    latestFullIdentifier: String!
+    latestVersion: NevermorePluginVersion
+    channels: [NevermorePluginChannel!]
+}
+
+type NevermorePluginChannel {
+    name: String!
+    plugin: NevermorePlugin
+    versions: [NevermorePluginVersion!]
+}
+
+type NevermorePluginVersion {
+    id: ID!
+    plugin: NevermorePlugin
+    channel: NevermorePluginChannel
+    shortIdentifier: String!
+    fullIdentifier: String!
+    readme: String
+    downloadUrl: String! # Ephemeral - do not store - always request new url before downloading
+}
+
+type NevermorePluginPage {
+    pageNum: Int!
+    hasNext: Boolean!
+    plugins: [NevermorePlugin!]
+}

@@ -1,0 +1,8 @@
+type MutatePluginPayload {
+    successful: Boolean!
+    plugin: NevermorePlugin
+}
+
+type UploadPayload {
+    url: String!
+}
