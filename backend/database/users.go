@@ -58,21 +58,22 @@ func GetUserByToken(token string) *model.User {
 	bs := h.Sum(nil)
 	tokenHash := fmt.Sprintf("%x\n", bs)
 
-	sb := sqlbuilder.NewSelectBuilder().Select("user_id").From("user_tokens")
-	sb.Where(sb.Equal("hash", tokenHash))
-	sb.Where(sb.GreaterThan("expires_at", time.Now()))
+	sb := userStruct.SelectFrom("users")
+	sb.JoinWithOption(sqlbuilder.InnerJoin, "user_tokens", "users.id = user_tokens.user_id")
+	sb.Where(sb.Equal("user_tokens.hash", tokenHash))
+	sb.Where(sb.GreaterThan("user_tokens.expires_at", time.Now()))
 	q, args := sb.Build()
 
 	row := db.QueryRow(q, args...)
-	var userId string
-	err := row.Scan(&userId)
+	user := model.User{}
+	err := row.Scan(userStruct.Addr(&user)...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil
 		}
 		panic(err)
 	}
-	return GetUserByID(userId)
+	return &user
 }
 
 func CreateUser(username string, email string) (string, error) {

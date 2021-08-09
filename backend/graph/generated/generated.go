@@ -37,6 +37,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	NevermorePlugin() NevermorePluginResolver
+	NevermorePluginVersion() NevermorePluginVersionResolver
 	Query() QueryResolver
 }
 
@@ -89,8 +90,9 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Me            func(childComplexity int) int
+		Plugin        func(childComplexity int, id *string, name *string) int
 		PluginVersion func(childComplexity int, identifier string) int
-		SearchPlugins func(childComplexity int, search *string, page *int) int
+		SearchPlugins func(childComplexity int, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) int
 	}
 
 	UploadPayload struct {
@@ -115,10 +117,19 @@ type NevermorePluginResolver interface {
 	LatestVersion(ctx context.Context, obj *model.NevermorePlugin) (*model.NevermorePluginVersion, error)
 	Channels(ctx context.Context, obj *model.NevermorePlugin) ([]*model.NevermorePluginChannel, error)
 }
+type NevermorePluginVersionResolver interface {
+	Plugin(ctx context.Context, obj *model.NevermorePluginVersion) (*model.NevermorePlugin, error)
+	Channel(ctx context.Context, obj *model.NevermorePluginVersion) (*model.NevermorePluginChannel, error)
+	ShortIdentifier(ctx context.Context, obj *model.NevermorePluginVersion) (string, error)
+	FullIdentifier(ctx context.Context, obj *model.NevermorePluginVersion) (string, error)
+
+	DownloadURL(ctx context.Context, obj *model.NevermorePluginVersion) (string, error)
+}
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
-	SearchPlugins(ctx context.Context, search *string, page *int) (*model.NevermorePluginPage, error)
+	SearchPlugins(ctx context.Context, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) (*model.NevermorePluginPage, error)
 	PluginVersion(ctx context.Context, identifier string) (*model.NevermorePluginVersion, error)
+	Plugin(ctx context.Context, id *string, name *string) (*model.NevermorePlugin, error)
 }
 
 type executableSchema struct {
@@ -328,6 +339,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
+	case "Query.plugin":
+		if e.complexity.Query.Plugin == nil {
+			break
+		}
+
+		args, err := ec.field_Query_plugin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Plugin(childComplexity, args["id"].(*string), args["name"].(*string)), true
+
 	case "Query.pluginVersion":
 		if e.complexity.Query.PluginVersion == nil {
 			break
@@ -350,7 +373,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchPlugins(childComplexity, args["search"].(*string), args["page"].(*int)), true
+		return e.complexity.Query.SearchPlugins(childComplexity, args["search"].(*string), args["type"].(*model.NevermorePluginType), args["owner"].(*string), args["page"].(*int)), true
 
 	case "UploadPayload.url":
 		if e.complexity.UploadPayload.URL == nil {
@@ -447,8 +470,9 @@ type UploadPayload {
 }`, BuiltIn: false},
 	{Name: "graph/schema/schema.graphql", Input: `type Query {
   me: User
-  searchPlugins(search: String = "", page: Int = 1): NevermorePluginPage
+  searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
   pluginVersion(identifier: String!): NevermorePluginVersion
+  plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
 }
 
 type Mutation {
@@ -464,7 +488,7 @@ type NevermorePlugin {
     id: ID!
     name: String!
     owner: User
-    type: String!
+    type: NevermorePluginType!
     latestShortIdentifier: String!
     latestFullIdentifier: String!
     latestVersion: NevermorePluginVersion
@@ -474,7 +498,7 @@ type NevermorePlugin {
 type NevermorePluginChannel {
     name: String!
     plugin: NevermorePlugin
-    versions: [NevermorePluginVersion!]
+    versions: [NevermorePluginVersion!] # Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)
 }
 
 type NevermorePluginVersion {
@@ -491,6 +515,12 @@ type NevermorePluginPage {
     pageNum: Int!
     hasNext: Boolean!
     plugins: [NevermorePlugin!]
+}
+
+enum NevermorePluginType {
+    GENERIC,
+    GAME,
+    NETWORK_CONFIGURATOR
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -577,6 +607,30 @@ func (ec *executionContext) field_Query_pluginVersion_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_plugin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_searchPlugins_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -589,15 +643,33 @@ func (ec *executionContext) field_Query_searchPlugins_args(ctx context.Context, 
 		}
 	}
 	args["search"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+	var arg1 *model.NevermorePluginType
+	if tmp, ok := rawArgs["type"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+		arg1, err = ec.unmarshalONevermorePluginType2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["page"] = arg1
+	args["type"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["owner"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("owner"))
+		arg2, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["owner"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg3
 	return args, nil
 }
 
@@ -916,9 +988,9 @@ func (ec *executionContext) _NevermorePlugin_type(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(model.NevermorePluginType)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNNevermorePluginType2githubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _NevermorePlugin_latestShortIdentifier(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
@@ -1302,14 +1374,14 @@ func (ec *executionContext) _NevermorePluginVersion_plugin(ctx context.Context, 
 		Object:     "NevermorePluginVersion",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Plugin, nil
+		return ec.resolvers.NevermorePluginVersion().Plugin(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1334,14 +1406,14 @@ func (ec *executionContext) _NevermorePluginVersion_channel(ctx context.Context,
 		Object:     "NevermorePluginVersion",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Channel, nil
+		return ec.resolvers.NevermorePluginVersion().Channel(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1366,14 +1438,14 @@ func (ec *executionContext) _NevermorePluginVersion_shortIdentifier(ctx context.
 		Object:     "NevermorePluginVersion",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ShortIdentifier, nil
+		return ec.resolvers.NevermorePluginVersion().ShortIdentifier(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1401,14 +1473,14 @@ func (ec *executionContext) _NevermorePluginVersion_fullIdentifier(ctx context.C
 		Object:     "NevermorePluginVersion",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.FullIdentifier, nil
+		return ec.resolvers.NevermorePluginVersion().FullIdentifier(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1468,14 +1540,14 @@ func (ec *executionContext) _NevermorePluginVersion_downloadUrl(ctx context.Cont
 		Object:     "NevermorePluginVersion",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.DownloadURL, nil
+		return ec.resolvers.NevermorePluginVersion().DownloadURL(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1549,7 +1621,7 @@ func (ec *executionContext) _Query_searchPlugins(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SearchPlugins(rctx, args["search"].(*string), args["page"].(*int))
+		return ec.resolvers.Query().SearchPlugins(rctx, args["search"].(*string), args["type"].(*model.NevermorePluginType), args["owner"].(*string), args["page"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1600,6 +1672,45 @@ func (ec *executionContext) _Query_pluginVersion(ctx context.Context, field grap
 	res := resTmp.(*model.NevermorePluginVersion)
 	fc.Result = res
 	return ec.marshalONevermorePluginVersion2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginVersion(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_plugin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_plugin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Plugin(rctx, args["id"].(*string), args["name"].(*string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.NevermorePlugin)
+	fc.Result = res
+	return ec.marshalONevermorePlugin2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePlugin(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3109,29 +3220,74 @@ func (ec *executionContext) _NevermorePluginVersion(ctx context.Context, sel ast
 		case "id":
 			out.Values[i] = ec._NevermorePluginVersion_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "plugin":
-			out.Values[i] = ec._NevermorePluginVersion_plugin(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginVersion_plugin(ctx, field, obj)
+				return res
+			})
 		case "channel":
-			out.Values[i] = ec._NevermorePluginVersion_channel(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginVersion_channel(ctx, field, obj)
+				return res
+			})
 		case "shortIdentifier":
-			out.Values[i] = ec._NevermorePluginVersion_shortIdentifier(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginVersion_shortIdentifier(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "fullIdentifier":
-			out.Values[i] = ec._NevermorePluginVersion_fullIdentifier(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginVersion_fullIdentifier(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "readme":
 			out.Values[i] = ec._NevermorePluginVersion_readme(ctx, field, obj)
 		case "downloadUrl":
-			out.Values[i] = ec._NevermorePluginVersion_downloadUrl(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginVersion_downloadUrl(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3189,6 +3345,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_pluginVersion(ctx, field)
+				return res
+			})
+		case "plugin":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_plugin(ctx, field)
 				return res
 			})
 		case "__type":
@@ -3575,6 +3742,16 @@ func (ec *executionContext) marshalNNevermorePluginChannel2ᚖgithubᚗcomᚋNev
 	return ec._NevermorePluginChannel(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNNevermorePluginType2githubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx context.Context, v interface{}) (model.NevermorePluginType, error) {
+	var res model.NevermorePluginType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNNevermorePluginType2githubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx context.Context, sel ast.SelectionSet, v model.NevermorePluginType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNNevermorePluginVersion2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginVersion(ctx context.Context, sel ast.SelectionSet, v *model.NevermorePluginVersion) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3853,6 +4030,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalID(*v)
+}
+
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
 	if v == nil {
 		return nil, nil
@@ -3974,6 +4166,22 @@ func (ec *executionContext) marshalONevermorePluginPage2ᚖgithubᚗcomᚋNeverm
 		return graphql.Null
 	}
 	return ec._NevermorePluginPage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalONevermorePluginType2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx context.Context, v interface{}) (*model.NevermorePluginType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.NevermorePluginType)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalONevermorePluginType2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx context.Context, sel ast.SelectionSet, v *model.NevermorePluginType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalONevermorePluginVersion2ᚕᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginVersionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.NevermorePluginVersion) graphql.Marshaler {

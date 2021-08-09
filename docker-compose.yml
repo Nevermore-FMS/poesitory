@@ -3,6 +3,7 @@ version: "3.8"
 services:
     backend:
         build: backend
+        restart: always
         environment: 
             - GITHUB_CLIENT_ID
             - GITHUB_CLIENT_SECRET
@@ -18,6 +19,7 @@ services:
         build: 
             context: migrations
             dockerfile: Dockerfile.db
+        restart: always
         environment: 
         - POSTGRES_PASSWORD=${POESITORY_SECRET}
         volumes:
@@ -27,6 +29,7 @@ services:
 
     cdn:
         image: minio/minio
+        restart: always
         volumes:
             - cdndata:/data
         environment: 
@@ -35,7 +38,7 @@ services:
         ports: 
             - 9000
             - 9001
-        command: ["server", "/data", "--console-address", ":9001"]
+        command: ["server", "/data"]
 
 
     migrate:

@@ -2,33 +2,51 @@
 
 package model
 
-type MutatePluginPayload struct {
-	Successful bool             `json:"successful"`
-	Plugin     *NevermorePlugin `json:"plugin"`
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
+type NevermorePluginType string
+
+const (
+	NevermorePluginTypeGeneric             NevermorePluginType = "GENERIC"
+	NevermorePluginTypeGame                NevermorePluginType = "GAME"
+	NevermorePluginTypeNetworkConfigurator NevermorePluginType = "NETWORK_CONFIGURATOR"
+)
+
+var AllNevermorePluginType = []NevermorePluginType{
+	NevermorePluginTypeGeneric,
+	NevermorePluginTypeGame,
+	NevermorePluginTypeNetworkConfigurator,
 }
 
-type NevermorePluginChannel struct {
-	Name     string                    `json:"name"`
-	Plugin   *NevermorePlugin          `json:"plugin"`
-	Versions []*NevermorePluginVersion `json:"versions"`
+func (e NevermorePluginType) IsValid() bool {
+	switch e {
+	case NevermorePluginTypeGeneric, NevermorePluginTypeGame, NevermorePluginTypeNetworkConfigurator:
+		return true
+	}
+	return false
 }
 
-type NevermorePluginPage struct {
-	PageNum int                `json:"pageNum"`
-	HasNext bool               `json:"hasNext"`
-	Plugins []*NevermorePlugin `json:"plugins"`
+func (e NevermorePluginType) String() string {
+	return string(e)
 }
 
-type NevermorePluginVersion struct {
-	ID              string                  `json:"id"`
-	Plugin          *NevermorePlugin        `json:"plugin"`
-	Channel         *NevermorePluginChannel `json:"channel"`
-	ShortIdentifier string                  `json:"shortIdentifier"`
-	FullIdentifier  string                  `json:"fullIdentifier"`
-	Readme          *string                 `json:"readme"`
-	DownloadURL     string                  `json:"downloadUrl"`
+func (e *NevermorePluginType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NevermorePluginType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NevermorePluginType", str)
+	}
+	return nil
 }
 
-type UploadPayload struct {
-	URL string `json:"url"`
+func (e NevermorePluginType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

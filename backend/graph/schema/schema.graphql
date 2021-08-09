@@ -1,7 +1,8 @@
 type Query {
   me: User
-  searchPlugins(search: String = "", page: Int = 1): NevermorePluginPage
+  searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
   pluginVersion(identifier: String!): NevermorePluginVersion
+  plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
 }
 
 type Mutation {

@@ -25,17 +25,27 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return auth.UserForContext(ctx), nil
 }
 
-func (r *queryResolver) SearchPlugins(ctx context.Context, search *string, page *int) (*model.NevermorePluginPage, error) {
-	plugins := database.GetPlugins(*search, *page)
+func (r *queryResolver) SearchPlugins(ctx context.Context, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) (*model.NevermorePluginPage, error) {
+	plugins, hasNext := database.GetPlugins(*search, typeArg, owner, *page)
 	return &model.NevermorePluginPage{
 		PageNum: *page,
-		HasNext: false, // TODO
+		HasNext: hasNext,
 		Plugins: plugins,
 	}, nil
 }
 
 func (r *queryResolver) PluginVersion(ctx context.Context, identifier string) (*model.NevermorePluginVersion, error) {
 	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Plugin(ctx context.Context, id *string, name *string) (*model.NevermorePlugin, error) {
+	if id != nil {
+		return database.GetPluginByID(*id), nil
+	}
+	if name != nil {
+		return database.GetPluginByName(*name), nil
+	}
+	return nil, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

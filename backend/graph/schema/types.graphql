@@ -7,7 +7,7 @@ type NevermorePlugin {
     id: ID!
     name: String!
     owner: User
-    type: String!
+    type: NevermorePluginType!
     latestShortIdentifier: String!
     latestFullIdentifier: String!
     latestVersion: NevermorePluginVersion
@@ -17,7 +17,7 @@ type NevermorePlugin {
 type NevermorePluginChannel {
     name: String!
     plugin: NevermorePlugin
-    versions: [NevermorePluginVersion!]
+    versions: [NevermorePluginVersion!] # Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)
 }
 
 type NevermorePluginVersion {
@@ -34,4 +34,10 @@ type NevermorePluginPage {
     pageNum: Int!
     hasNext: Boolean!
     plugins: [NevermorePlugin!]
+}
+
+enum NevermorePluginType {
+    GENERIC,
+    GAME,
+    NETWORK_CONFIGURATOR
 }

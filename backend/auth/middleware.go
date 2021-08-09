@@ -14,6 +14,7 @@ type contextKey struct {
 }
 
 var userCtxKey = &contextKey{"user"}
+var pluginCtxKey = &contextKey{"plugin"}
 var tokenCtxKey = &contextKey{"token"}
 
 func Middleware(next http.Handler) http.Handler {
@@ -31,6 +32,17 @@ func Middleware(next http.Handler) http.Handler {
 
 				}
 			}
+
+			if auth[0] == "Plugin" {
+				plugin := database.GetPluginByToken(auth[1])
+
+				if plugin != nil {
+					ctx := context.WithValue(r.Context(), pluginCtxKey, plugin)
+					ctx = context.WithValue(ctx, tokenCtxKey, &auth[1])
+					r = r.WithContext(ctx)
+
+				}
+			}
 		}
 
 		next.ServeHTTP(w, r)
@@ -39,6 +51,14 @@ func Middleware(next http.Handler) http.Handler {
 
 func UserForContext(ctx context.Context) *model.User {
 	raw, ok := ctx.Value(userCtxKey).(*model.User)
+	if !ok {
+		return nil
+	}
+	return raw
+}
+
+func PluginForContext(ctx context.Context) *model.NevermorePlugin {
+	raw, ok := ctx.Value(userCtxKey).(*model.NevermorePlugin)
 	if !ok {
 		return nil
 	}

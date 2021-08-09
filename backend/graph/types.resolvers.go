@@ -31,9 +31,35 @@ func (r *nevermorePluginResolver) Channels(ctx context.Context, obj *model.Never
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *nevermorePluginVersionResolver) Plugin(ctx context.Context, obj *model.NevermorePluginVersion) (*model.NevermorePlugin, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *nevermorePluginVersionResolver) Channel(ctx context.Context, obj *model.NevermorePluginVersion) (*model.NevermorePluginChannel, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *nevermorePluginVersionResolver) ShortIdentifier(ctx context.Context, obj *model.NevermorePluginVersion) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *nevermorePluginVersionResolver) FullIdentifier(ctx context.Context, obj *model.NevermorePluginVersion) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *nevermorePluginVersionResolver) DownloadURL(ctx context.Context, obj *model.NevermorePluginVersion) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 // NevermorePlugin returns generated.NevermorePluginResolver implementation.
 func (r *Resolver) NevermorePlugin() generated.NevermorePluginResolver {
 	return &nevermorePluginResolver{r}
 }
 
+// NevermorePluginVersion returns generated.NevermorePluginVersionResolver implementation.
+func (r *Resolver) NevermorePluginVersion() generated.NevermorePluginVersionResolver {
+	return &nevermorePluginVersionResolver{r}
+}
+
 type nevermorePluginResolver struct{ *Resolver }
+type nevermorePluginVersionResolver struct{ *Resolver }
