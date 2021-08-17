@@ -8,14 +8,13 @@ type NevermorePlugin struct {
 }
 
 type MutatePluginPayload struct {
-	Successful bool             `json:"successful"`
-	Plugin     *NevermorePlugin `json:"plugin"`
+	Successful bool `json:"successful"`
+	PluginID   string
 }
 
 type NevermorePluginChannel struct {
-	Name     string                    `json:"name"`
-	Plugin   *NevermorePlugin          `json:"plugin"`
-	Versions []*NevermorePluginVersion `json:"versions"`
+	PluginID string
+	Name     string `json:"name"`
 }
 
 type NevermorePluginPage struct {

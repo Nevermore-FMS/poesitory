@@ -3,7 +3,9 @@ package database
 import (
 	"crypto/sha256"
 	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Nevermore-FMS/poesitory/backend/graph/model"
 	"github.com/huandu/go-sqlbuilder"
@@ -112,4 +114,49 @@ func GetPluginByToken(token string) *model.NevermorePlugin {
 		panic(err)
 	}
 	return &plugin
+}
+
+func GetChannelsForPlugin(pluginID string) []*model.NevermorePluginChannel {
+	sb := sqlbuilder.NewSelectBuilder().From("plugin_versions").Select("channel").Distinct()
+	sb.Where(sb.Equal("plugin", pluginID))
+
+	q, args := sb.Build()
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		panic(err)
+	}
+	channels := make([]*model.NevermorePluginChannel, 0)
+	for rows.Next() {
+		channel := model.NevermorePluginChannel{
+			PluginID: pluginID,
+		}
+		err := rows.Scan(&channel.Name)
+		if err != nil {
+			panic(err)
+		}
+		channels = append(channels, &channel)
+	}
+	return channels
+}
+
+func CreatePlugin(name string, typeArg model.NevermorePluginType, ownerID string) (string, error) {
+	id := node.Generate().String()
+	q, args := pluginStruct.InsertInto("plugins", model.NevermorePlugin{
+		ID:      id,
+		Name:    name,
+		Type:    typeArg,
+		OwnerID: ownerID,
+	}).Build()
+
+	_, err := db.Exec(q, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "violates unique constraint") {
+			return "", errors.New("name already exists")
+		}
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return "", ErrUserDoesNotExist
+		}
+		panic(err)
+	}
+	return id, nil
 }

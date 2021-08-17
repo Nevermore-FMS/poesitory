@@ -2,6 +2,7 @@ package model
 
 type NevermorePluginVersion struct {
 	ID         string  `json:"id"`
+	Hash       string  `db:"hash"`
 	PluginID   string  `db:"plugin"`
 	ChannelStr string  `db:"channel"`
 	Major      int     `db:"major"`

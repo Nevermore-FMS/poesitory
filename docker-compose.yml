@@ -8,6 +8,7 @@ services:
             - GITHUB_CLIENT_ID
             - GITHUB_CLIENT_SECRET
             - POESITORY_BASE_URL
+            - POESITORY_CDN_URI
             - POESITORY_SECRET
         depends_on:
             - db
@@ -38,7 +39,7 @@ services:
         ports: 
             - 9000
             - 9001
-        command: ["server", "/data"]
+        command: ["server", "--console-address", ":9001", "/data"]
 
 
     migrate:

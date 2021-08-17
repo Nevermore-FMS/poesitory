@@ -8,16 +8,19 @@ type NevermorePlugin {
     name: String!
     owner: User
     type: NevermorePluginType!
-    latestShortIdentifier: String!
-    latestFullIdentifier: String!
+    latestFullIdentifier: String
     latestVersion: NevermorePluginVersion
     channels: [NevermorePluginChannel!]
+
+    uploadTokens: [UploadToken!]
 }
 
 type NevermorePluginChannel {
     name: String!
     plugin: NevermorePlugin
-    versions: [NevermorePluginVersion!] # Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)
+
+    """Note: Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)"""
+    versions: [NevermorePluginVersion!]
 }
 
 type NevermorePluginVersion {
@@ -27,7 +30,9 @@ type NevermorePluginVersion {
     shortIdentifier: String!
     fullIdentifier: String!
     readme: String
-    downloadUrl: String! # Ephemeral - do not store - always request new url before downloading
+    
+    """Ephemeral - do not store - always request new url before downloading"""
+    downloadUrl: String!
 }
 
 type NevermorePluginPage {
@@ -40,4 +45,9 @@ enum NevermorePluginType {
     GENERIC,
     GAME,
     NETWORK_CONFIGURATOR
+}
+
+type UploadToken {
+    id: ID!
+    createdAt: Int!
 }

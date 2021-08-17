@@ -95,6 +95,7 @@ func GithubCallbackHandler() http.Handler {
 			Name:    "token",
 			Value:   userToken,
 			Expires: time.Now().Add(24 * time.Hour),
+			Path:    "/",
 		})
 
 		url := *SelfUrl

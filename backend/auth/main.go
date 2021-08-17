@@ -1,9 +1,13 @@
 package auth
 
 import (
+	"errors"
+	"log"
 	"net/url"
 	"os"
 )
+
+var ErrNoPermissions = errors.New("lacking permissions to perform this action")
 
 type Token struct {
 	AccessToken string `json:"accessToken"`
@@ -12,17 +16,17 @@ type Token struct {
 
 var SelfUrl *url.URL
 
-func Init() {
+func init() {
 	var err error
 	SelfUrl, err = url.Parse(envFallback("POESITORY_BASE_URL", "http://localhost:8080"))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	initGithub()
 }
 
 func envFallback(env string, fallback string) string {
-	result := os.Getenv("POESITORY_BASE_URL")
+	result := os.Getenv(env)
 	if len(result) == 0 {
 		result = fallback
 	}

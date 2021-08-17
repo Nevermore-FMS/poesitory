@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/bwmarrin/snowflake"
@@ -17,7 +18,7 @@ func CloseDb() {
 	db.Close()
 }
 
-func Init() error {
+func init() {
 	sqlbuilder.DefaultFlavor = sqlbuilder.PostgreSQL
 	connStr := os.Getenv("DEV_DB_URI")
 	if len(connStr) == 0 {
@@ -25,12 +26,14 @@ func Init() error {
 	}
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	db = dbConn
 	db.SetMaxOpenConns(50)
 
 	snowflake.Epoch = 1628042817000
 	node, err = snowflake.NewNode(1)
-	return err
+	if err != nil {
+		log.Fatal(err)
+	}
 }

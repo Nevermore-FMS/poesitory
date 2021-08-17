@@ -8,7 +8,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/Nevermore-FMS/poesitory/backend/auth"
-	"github.com/Nevermore-FMS/poesitory/backend/database"
+	"github.com/Nevermore-FMS/poesitory/backend/cdn"
+	"github.com/Nevermore-FMS/poesitory/backend/eaobird"
 	"github.com/Nevermore-FMS/poesitory/backend/graph"
 	"github.com/Nevermore-FMS/poesitory/backend/graph/generated"
 	"github.com/rs/cors"
@@ -17,13 +18,12 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	eaobird.Print()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
-
-	database.Init()
-	auth.Init()
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 
@@ -41,7 +41,9 @@ func main() {
 	http.Handle("/api/github/login", auth.GithubLoginHandler())
 	http.Handle("/api/github/callback", auth.GithubCallbackHandler())
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	http.Handle("/api/upload/", cdn.UploadHandler())
+
+	log.Printf("Server Running on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 
 }

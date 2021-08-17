@@ -16,7 +16,7 @@ func GetPluginVersion(id string) *model.NevermorePluginVersion {
 	q, args := sb.Build()
 	row := db.QueryRow(q, args...)
 	pv := model.NevermorePluginVersion{}
-	err := row.Scan(pluginStruct.Addr(&pv)...)
+	err := row.Scan(pluginVersionStruct.Addr(&pv)...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil
@@ -43,11 +43,33 @@ func GetPluginVersionsForPlugin(pluginID string, channel string) []*model.Neverm
 	pluginVersions := make([]*model.NevermorePluginVersion, 0)
 	for rows.Next() {
 		pv := model.NevermorePluginVersion{}
-		rows.Scan(pluginStruct.Addr(&pv)...)
+		rows.Scan(pluginVersionStruct.Addr(&pv)...)
 		pluginVersions = append(pluginVersions, &pv)
 	}
 
 	return pluginVersions
+}
+
+func GetPluginVersionForPlugin(pluginID string, channel string, major, minor, patch int) *model.NevermorePluginVersion {
+	sb := pluginVersionStruct.SelectFrom("plugin_versions")
+	sb.Where(sb.Equal("plugin", pluginID))
+	sb.Where(sb.Equal("channel", channel))
+	sb.Where(sb.Equal("major", major))
+	sb.Where(sb.Equal("minor", minor))
+	sb.Where(sb.Equal("patch", patch))
+
+	q, args := sb.Build()
+	row := db.QueryRow(q, args...)
+	pv := model.NevermorePluginVersion{}
+	err := row.Scan(pluginVersionStruct.Addr(&pv)...)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		panic(err)
+	}
+
+	return &pv
 }
 
 func GetLatestPluginVersionForPlugin(pluginID string, channel string) *model.NevermorePluginVersion {
@@ -60,7 +82,7 @@ func GetLatestPluginVersionForPlugin(pluginID string, channel string) *model.Nev
 	q, args := sb.Build()
 	row := db.QueryRow(q, args...)
 	pv := model.NevermorePluginVersion{}
-	err := row.Scan(pluginStruct.Addr(&pv)...)
+	err := row.Scan(pluginVersionStruct.Addr(&pv)...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil

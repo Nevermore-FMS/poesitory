@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
    patch integer NOT NULL,
    channel character varying(50),
    timestamp timestamp,
-   readme text
+   readme text,
+   UNIQUE(plugin, major, minor, patch, channel)
 );

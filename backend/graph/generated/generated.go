@@ -35,8 +35,10 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	MutatePluginPayload() MutatePluginPayloadResolver
 	Mutation() MutationResolver
 	NevermorePlugin() NevermorePluginResolver
+	NevermorePluginChannel() NevermorePluginChannelResolver
 	NevermorePluginVersion() NevermorePluginVersionResolver
 	Query() QueryResolver
 }
@@ -51,19 +53,21 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreatePlugin        func(childComplexity int, name string) int
+		CreatePlugin        func(childComplexity int, name string, typeArg model.NevermorePluginType) int
+		CreateUploadToken   func(childComplexity int, pluginID string) int
+		DeleteUploadToken   func(childComplexity int, id string) int
 		UploadPluginVersion func(childComplexity int, id string, version string, channel string) int
 	}
 
 	NevermorePlugin struct {
-		Channels              func(childComplexity int) int
-		ID                    func(childComplexity int) int
-		LatestFullIdentifier  func(childComplexity int) int
-		LatestShortIdentifier func(childComplexity int) int
-		LatestVersion         func(childComplexity int) int
-		Name                  func(childComplexity int) int
-		Owner                 func(childComplexity int) int
-		Type                  func(childComplexity int) int
+		Channels             func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LatestFullIdentifier func(childComplexity int) int
+		LatestVersion        func(childComplexity int) int
+		Name                 func(childComplexity int) int
+		Owner                func(childComplexity int) int
+		Type                 func(childComplexity int) int
+		UploadTokens         func(childComplexity int) int
 	}
 
 	NevermorePluginChannel struct {
@@ -91,12 +95,17 @@ type ComplexityRoot struct {
 	Query struct {
 		Me            func(childComplexity int) int
 		Plugin        func(childComplexity int, id *string, name *string) int
-		PluginVersion func(childComplexity int, identifier string) int
+		PluginVersion func(childComplexity int, versionIdentifier string) int
 		SearchPlugins func(childComplexity int, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) int
 	}
 
 	UploadPayload struct {
 		URL func(childComplexity int) int
+	}
+
+	UploadToken struct {
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
 	}
 
 	User struct {
@@ -105,17 +114,26 @@ type ComplexityRoot struct {
 	}
 }
 
+type MutatePluginPayloadResolver interface {
+	Plugin(ctx context.Context, obj *model.MutatePluginPayload) (*model.NevermorePlugin, error)
+}
 type MutationResolver interface {
-	CreatePlugin(ctx context.Context, name string) (*model.MutatePluginPayload, error)
+	CreatePlugin(ctx context.Context, name string, typeArg model.NevermorePluginType) (*model.MutatePluginPayload, error)
 	UploadPluginVersion(ctx context.Context, id string, version string, channel string) (*model.UploadPayload, error)
+	CreateUploadToken(ctx context.Context, pluginID string) (*string, error)
+	DeleteUploadToken(ctx context.Context, id string) (*model.MutatePluginPayload, error)
 }
 type NevermorePluginResolver interface {
 	Owner(ctx context.Context, obj *model.NevermorePlugin) (*model.User, error)
 
-	LatestShortIdentifier(ctx context.Context, obj *model.NevermorePlugin) (string, error)
-	LatestFullIdentifier(ctx context.Context, obj *model.NevermorePlugin) (string, error)
+	LatestFullIdentifier(ctx context.Context, obj *model.NevermorePlugin) (*string, error)
 	LatestVersion(ctx context.Context, obj *model.NevermorePlugin) (*model.NevermorePluginVersion, error)
 	Channels(ctx context.Context, obj *model.NevermorePlugin) ([]*model.NevermorePluginChannel, error)
+	UploadTokens(ctx context.Context, obj *model.NevermorePlugin) ([]*model.UploadToken, error)
+}
+type NevermorePluginChannelResolver interface {
+	Plugin(ctx context.Context, obj *model.NevermorePluginChannel) (*model.NevermorePlugin, error)
+	Versions(ctx context.Context, obj *model.NevermorePluginChannel) ([]*model.NevermorePluginVersion, error)
 }
 type NevermorePluginVersionResolver interface {
 	Plugin(ctx context.Context, obj *model.NevermorePluginVersion) (*model.NevermorePlugin, error)
@@ -128,7 +146,7 @@ type NevermorePluginVersionResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	SearchPlugins(ctx context.Context, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) (*model.NevermorePluginPage, error)
-	PluginVersion(ctx context.Context, identifier string) (*model.NevermorePluginVersion, error)
+	PluginVersion(ctx context.Context, versionIdentifier string) (*model.NevermorePluginVersion, error)
 	Plugin(ctx context.Context, id *string, name *string) (*model.NevermorePlugin, error)
 }
 
@@ -171,7 +189,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePlugin(childComplexity, args["name"].(string)), true
+		return e.complexity.Mutation.CreatePlugin(childComplexity, args["name"].(string), args["type"].(model.NevermorePluginType)), true
+
+	case "Mutation.createUploadToken":
+		if e.complexity.Mutation.CreateUploadToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createUploadToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateUploadToken(childComplexity, args["pluginID"].(string)), true
+
+	case "Mutation.deleteUploadToken":
+		if e.complexity.Mutation.DeleteUploadToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteUploadToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteUploadToken(childComplexity, args["id"].(string)), true
 
 	case "Mutation.uploadPluginVersion":
 		if e.complexity.Mutation.UploadPluginVersion == nil {
@@ -206,13 +248,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.NevermorePlugin.LatestFullIdentifier(childComplexity), true
 
-	case "NevermorePlugin.latestShortIdentifier":
-		if e.complexity.NevermorePlugin.LatestShortIdentifier == nil {
-			break
-		}
-
-		return e.complexity.NevermorePlugin.LatestShortIdentifier(childComplexity), true
-
 	case "NevermorePlugin.latestVersion":
 		if e.complexity.NevermorePlugin.LatestVersion == nil {
 			break
@@ -240,6 +275,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.NevermorePlugin.Type(childComplexity), true
+
+	case "NevermorePlugin.uploadTokens":
+		if e.complexity.NevermorePlugin.UploadTokens == nil {
+			break
+		}
+
+		return e.complexity.NevermorePlugin.UploadTokens(childComplexity), true
 
 	case "NevermorePluginChannel.name":
 		if e.complexity.NevermorePluginChannel.Name == nil {
@@ -361,7 +403,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.PluginVersion(childComplexity, args["identifier"].(string)), true
+		return e.complexity.Query.PluginVersion(childComplexity, args["versionIdentifier"].(string)), true
 
 	case "Query.searchPlugins":
 		if e.complexity.Query.SearchPlugins == nil {
@@ -381,6 +423,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UploadPayload.URL(childComplexity), true
+
+	case "UploadToken.createdAt":
+		if e.complexity.UploadToken.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.UploadToken.CreatedAt(childComplexity), true
+
+	case "UploadToken.id":
+		if e.complexity.UploadToken.ID == nil {
+			break
+		}
+
+		return e.complexity.UploadToken.ID(childComplexity), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -471,13 +527,15 @@ type UploadPayload {
 	{Name: "graph/schema/schema.graphql", Input: `type Query {
   me: User
   searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
-  pluginVersion(identifier: String!): NevermorePluginVersion
+  pluginVersion(versionIdentifier: String!): NevermorePluginVersion
   plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
 }
 
 type Mutation {
-  createPlugin(name: String!): MutatePluginPayload
+  createPlugin(name: String!, type: NevermorePluginType!): MutatePluginPayload
   uploadPluginVersion(id: ID!, version: String!, channel: String!): UploadPayload
+  createUploadToken(pluginID: ID!): String
+  deleteUploadToken(id: ID!): MutatePluginPayload
 }`, BuiltIn: false},
 	{Name: "graph/schema/types.graphql", Input: `type User {
     id: ID!
@@ -489,16 +547,19 @@ type NevermorePlugin {
     name: String!
     owner: User
     type: NevermorePluginType!
-    latestShortIdentifier: String!
-    latestFullIdentifier: String!
+    latestFullIdentifier: String
     latestVersion: NevermorePluginVersion
     channels: [NevermorePluginChannel!]
+
+    uploadTokens: [UploadToken!]
 }
 
 type NevermorePluginChannel {
     name: String!
     plugin: NevermorePlugin
-    versions: [NevermorePluginVersion!] # Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)
+
+    """Note: Will only show the latest 50 versions - earlier versions can still be requested via pluginVersion(identifier)"""
+    versions: [NevermorePluginVersion!]
 }
 
 type NevermorePluginVersion {
@@ -508,7 +569,9 @@ type NevermorePluginVersion {
     shortIdentifier: String!
     fullIdentifier: String!
     readme: String
-    downloadUrl: String! # Ephemeral - do not store - always request new url before downloading
+    
+    """Ephemeral - do not store - always request new url before downloading"""
+    downloadUrl: String!
 }
 
 type NevermorePluginPage {
@@ -521,6 +584,11 @@ enum NevermorePluginType {
     GENERIC,
     GAME,
     NETWORK_CONFIGURATOR
+}
+
+type UploadToken {
+    id: ID!
+    createdAt: Int!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -541,6 +609,45 @@ func (ec *executionContext) field_Mutation_createPlugin_args(ctx context.Context
 		}
 	}
 	args["name"] = arg0
+	var arg1 model.NevermorePluginType
+	if tmp, ok := rawArgs["type"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+		arg1, err = ec.unmarshalNNevermorePluginType2githubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["type"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createUploadToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["pluginID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pluginID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["pluginID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteUploadToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -596,14 +703,14 @@ func (ec *executionContext) field_Query_pluginVersion_args(ctx context.Context, 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["identifier"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("identifier"))
+	if tmp, ok := rawArgs["versionIdentifier"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("versionIdentifier"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["identifier"] = arg0
+	args["versionIdentifier"] = arg0
 	return args, nil
 }
 
@@ -757,14 +864,14 @@ func (ec *executionContext) _MutatePluginPayload_plugin(ctx context.Context, fie
 		Object:     "MutatePluginPayload",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Plugin, nil
+		return ec.resolvers.MutatePluginPayload().Plugin(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -803,7 +910,7 @@ func (ec *executionContext) _Mutation_createPlugin(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePlugin(rctx, args["name"].(string))
+		return ec.resolvers.Mutation().CreatePlugin(rctx, args["name"].(string), args["type"].(model.NevermorePluginType))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -854,6 +961,84 @@ func (ec *executionContext) _Mutation_uploadPluginVersion(ctx context.Context, f
 	res := resTmp.(*model.UploadPayload)
 	fc.Result = res
 	return ec.marshalOUploadPayload2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUploadPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createUploadToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createUploadToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateUploadToken(rctx, args["pluginID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteUploadToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteUploadToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteUploadToken(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.MutatePluginPayload)
+	fc.Result = res
+	return ec.marshalOMutatePluginPayload2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐMutatePluginPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _NevermorePlugin_id(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
@@ -993,41 +1178,6 @@ func (ec *executionContext) _NevermorePlugin_type(ctx context.Context, field gra
 	return ec.marshalNNevermorePluginType2githubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _NevermorePlugin_latestShortIdentifier(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "NevermorePlugin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.NevermorePlugin().LatestShortIdentifier(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _NevermorePlugin_latestFullIdentifier(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1053,14 +1203,11 @@ func (ec *executionContext) _NevermorePlugin_latestFullIdentifier(ctx context.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _NevermorePlugin_latestVersion(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
@@ -1127,6 +1274,38 @@ func (ec *executionContext) _NevermorePlugin_channels(ctx context.Context, field
 	return ec.marshalONevermorePluginChannel2ᚕᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginChannelᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _NevermorePlugin_uploadTokens(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePlugin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "NevermorePlugin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NevermorePlugin().UploadTokens(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.UploadToken)
+	fc.Result = res
+	return ec.marshalOUploadToken2ᚕᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUploadTokenᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _NevermorePluginChannel_name(ctx context.Context, field graphql.CollectedField, obj *model.NevermorePluginChannel) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1173,14 +1352,14 @@ func (ec *executionContext) _NevermorePluginChannel_plugin(ctx context.Context, 
 		Object:     "NevermorePluginChannel",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Plugin, nil
+		return ec.resolvers.NevermorePluginChannel().Plugin(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1205,14 +1384,14 @@ func (ec *executionContext) _NevermorePluginChannel_versions(ctx context.Context
 		Object:     "NevermorePluginChannel",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Versions, nil
+		return ec.resolvers.NevermorePluginChannel().Versions(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1660,7 +1839,7 @@ func (ec *executionContext) _Query_pluginVersion(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PluginVersion(rctx, args["identifier"].(string))
+		return ec.resolvers.Query().PluginVersion(rctx, args["versionIdentifier"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1817,6 +1996,76 @@ func (ec *executionContext) _UploadPayload_url(ctx context.Context, field graphq
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UploadToken_id(ctx context.Context, field graphql.CollectedField, obj *model.UploadToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UploadToken",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UploadToken_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.UploadToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UploadToken",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2998,10 +3247,19 @@ func (ec *executionContext) _MutatePluginPayload(ctx context.Context, sel ast.Se
 		case "successful":
 			out.Values[i] = ec._MutatePluginPayload_successful(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "plugin":
-			out.Values[i] = ec._MutatePluginPayload_plugin(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MutatePluginPayload_plugin(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3032,6 +3290,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_createPlugin(ctx, field)
 		case "uploadPluginVersion":
 			out.Values[i] = ec._Mutation_uploadPluginVersion(ctx, field)
+		case "createUploadToken":
+			out.Values[i] = ec._Mutation_createUploadToken(ctx, field)
+		case "deleteUploadToken":
+			out.Values[i] = ec._Mutation_deleteUploadToken(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3080,20 +3342,6 @@ func (ec *executionContext) _NevermorePlugin(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "latestShortIdentifier":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._NevermorePlugin_latestShortIdentifier(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "latestFullIdentifier":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -3103,9 +3351,6 @@ func (ec *executionContext) _NevermorePlugin(ctx context.Context, sel ast.Select
 					}
 				}()
 				res = ec._NevermorePlugin_latestFullIdentifier(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "latestVersion":
@@ -3128,6 +3373,17 @@ func (ec *executionContext) _NevermorePlugin(ctx context.Context, sel ast.Select
 					}
 				}()
 				res = ec._NevermorePlugin_channels(ctx, field, obj)
+				return res
+			})
+		case "uploadTokens":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePlugin_uploadTokens(ctx, field, obj)
 				return res
 			})
 		default:
@@ -3155,12 +3411,30 @@ func (ec *executionContext) _NevermorePluginChannel(ctx context.Context, sel ast
 		case "name":
 			out.Values[i] = ec._NevermorePluginChannel_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "plugin":
-			out.Values[i] = ec._NevermorePluginChannel_plugin(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginChannel_plugin(ctx, field, obj)
+				return res
+			})
 		case "versions":
-			out.Values[i] = ec._NevermorePluginChannel_versions(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NevermorePluginChannel_versions(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3386,6 +3660,38 @@ func (ec *executionContext) _UploadPayload(ctx context.Context, sel ast.Selectio
 			out.Values[i] = graphql.MarshalString("UploadPayload")
 		case "url":
 			out.Values[i] = ec._UploadPayload_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var uploadTokenImplementors = []string{"UploadToken"}
+
+func (ec *executionContext) _UploadToken(ctx context.Context, sel ast.SelectionSet, obj *model.UploadToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadToken")
+		case "id":
+			out.Values[i] = ec._UploadToken_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._UploadToken_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3722,6 +4028,21 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNNevermorePlugin2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePlugin(ctx context.Context, sel ast.SelectionSet, v *model.NevermorePlugin) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3775,6 +4096,16 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUploadToken2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUploadToken(ctx context.Context, sel ast.SelectionSet, v *model.UploadToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UploadToken(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -4260,6 +4591,46 @@ func (ec *executionContext) marshalOUploadPayload2ᚖgithubᚗcomᚋNevermoreᚑ
 		return graphql.Null
 	}
 	return ec._UploadPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUploadToken2ᚕᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUploadTokenᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UploadToken) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUploadToken2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUploadToken(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {

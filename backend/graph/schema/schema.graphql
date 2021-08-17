@@ -1,11 +1,13 @@
 type Query {
   me: User
   searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
-  pluginVersion(identifier: String!): NevermorePluginVersion
+  pluginVersion(versionIdentifier: String!): NevermorePluginVersion
   plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
 }
 
 type Mutation {
-  createPlugin(name: String!): MutatePluginPayload
+  createPlugin(name: String!, type: NevermorePluginType!): MutatePluginPayload
   uploadPluginVersion(id: ID!, version: String!, channel: String!): UploadPayload
+  createUploadToken(pluginID: ID!): String
+  deleteUploadToken(id: ID!): MutatePluginPayload
 }

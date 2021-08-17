@@ -19,7 +19,15 @@ var tokenCtxKey = &contextKey{"token"}
 
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := strings.Split(r.Header.Get("Authorization"), " ")
+		var auth []string
+
+		if cookie, err := r.Cookie("token"); err == nil {
+			auth = []string{"User", cookie.Value}
+		}
+
+		if len(r.Header.Get("Authorization")) > 0 {
+			auth = strings.Split(r.Header.Get("Authorization"), " ")
+		}
 
 		if len(auth) == 2 {
 			if auth[0] == "User" {

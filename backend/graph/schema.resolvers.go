@@ -5,20 +5,114 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/Nevermore-FMS/poesitory/backend/auth"
+	"github.com/Nevermore-FMS/poesitory/backend/cdn"
 	"github.com/Nevermore-FMS/poesitory/backend/database"
 	"github.com/Nevermore-FMS/poesitory/backend/graph/generated"
 	"github.com/Nevermore-FMS/poesitory/backend/graph/model"
+	"github.com/Nevermore-FMS/poesitory/backend/identifier"
 )
 
-func (r *mutationResolver) CreatePlugin(ctx context.Context, name string) (*model.MutatePluginPayload, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreatePlugin(ctx context.Context, name string, typeArg model.NevermorePluginType) (*model.MutatePluginPayload, error) {
+	user := auth.UserForContext(ctx)
+	if user == nil {
+		return &model.MutatePluginPayload{
+			Successful: false,
+		}, auth.ErrNoPermissions
+	}
+	id, err := database.CreatePlugin(name, typeArg, user.ID)
+	if err != nil {
+		return &model.MutatePluginPayload{
+			Successful: false,
+		}, err
+	}
+	return &model.MutatePluginPayload{
+		Successful: true,
+		PluginID:   id,
+	}, nil
 }
 
 func (r *mutationResolver) UploadPluginVersion(ctx context.Context, id string, version string, channel string) (*model.UploadPayload, error) {
-	panic(fmt.Errorf("not implemented"))
+	plugin := database.GetPluginByID(id)
+	if plugin == nil {
+		return nil, errors.New("plugin does not exist")
+	}
+	user := auth.UserForContext(ctx)
+	if user == nil || plugin.OwnerID != user.ID {
+		return nil, auth.ErrNoPermissions
+	}
+	//TODO Allow upload tokens
+
+	if ok, _ := regexp.MatchString("^[A-Z-]+$", channel); !ok {
+		return nil, errors.New("invalid channel (only uppercase letters and '-' allowed)")
+	}
+
+	semVer, err := identifier.ParseVersion(version)
+	if err != nil {
+		return nil, err
+	}
+	latestSemVer := database.GetLatestPluginVersionForPlugin(id, channel)
+	if latestSemVer != nil {
+		isNewVersion := false
+		if semVer.Major > latestSemVer.Major {
+			isNewVersion = true
+		} else {
+			if semVer.Minor > latestSemVer.Minor {
+				isNewVersion = true
+			} else {
+				if semVer.Patch > latestSemVer.Patch {
+					isNewVersion = true
+				}
+			}
+		}
+		if !isNewVersion {
+			return nil, errors.New("version must be greater than the latest version in desired current channel")
+		}
+	}
+
+	uploadToken := cdn.AddExpectedPlugin(cdn.ExpectedPlugin{
+		ID:         id,
+		Name:       plugin.Name,
+		PluginType: plugin.Type,
+		Version:    version,
+		Channel:    channel,
+	})
+	return &model.UploadPayload{
+		URL: fmt.Sprintf("%s/api/upload/%s", auth.SelfUrl, uploadToken),
+	}, nil
+}
+
+func (r *mutationResolver) CreateUploadToken(ctx context.Context, pluginID string) (*string, error) {
+	plugin := database.GetPluginByID(pluginID)
+	if plugin == nil {
+		return nil, errors.New("plugin does not exist")
+	}
+	user := auth.UserForContext(ctx)
+	if user == nil || plugin.OwnerID != user.ID {
+		return nil, auth.ErrNoPermissions
+	}
+	return database.CreateUploadToken(pluginID)
+}
+
+func (r *mutationResolver) DeleteUploadToken(ctx context.Context, id string) (*model.MutatePluginPayload, error) {
+	uploadToken := database.GetUploadTokenByID(id)
+	if uploadToken == nil {
+		return nil, errors.New("upload token does not exist")
+	}
+	plugin := database.GetPluginByID(uploadToken.PluginID)
+	user := auth.UserForContext(ctx)
+	if user == nil || plugin.OwnerID != user.ID {
+		return nil, auth.ErrNoPermissions
+	}
+	database.DeleteUploadToken(id)
+	return &model.MutatePluginPayload{
+		Successful: true,
+		PluginID:   plugin.ID,
+	}, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
@@ -34,8 +128,20 @@ func (r *queryResolver) SearchPlugins(ctx context.Context, search *string, typeA
 	}, nil
 }
 
-func (r *queryResolver) PluginVersion(ctx context.Context, identifier string) (*model.NevermorePluginVersion, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) PluginVersion(ctx context.Context, versionIdentifier string) (*model.NevermorePluginVersion, error) {
+	pluginIdentifier, err := identifier.ParseStringIdentifier(versionIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	plugin := database.GetPluginByName(pluginIdentifier.Name)
+	if plugin == nil {
+		return nil, errors.New("plugin does not exist")
+	}
+	if pluginIdentifier.Version == nil {
+		return database.GetLatestPluginVersionForPlugin(plugin.ID, pluginIdentifier.Channel), nil
+	} else {
+		return database.GetPluginVersionForPlugin(plugin.ID, pluginIdentifier.Channel, pluginIdentifier.Version.Major, pluginIdentifier.Version.Minor, pluginIdentifier.Version.Patch), nil
+	}
 }
 
 func (r *queryResolver) Plugin(ctx context.Context, id *string, name *string) (*model.NevermorePlugin, error) {
