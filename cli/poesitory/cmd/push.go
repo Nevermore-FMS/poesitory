@@ -62,7 +62,7 @@ var pushCmd = &cobra.Command{
 }
 
 func init() {
-	pushCmd.Flags().StringVar(&channel, "channel", "STABLE", "the channel to push the plugin to (defaults to STABLE)")
-	pushCmd.Flags().StringVar(&basePath, "path", ".", "the path to the plugin (defaults to ./)")
+	pushCmd.Flags().StringVar(&channel, "channel", "STABLE", "the channel to push the plugin to")
+	pushCmd.Flags().StringVar(&basePath, "path", ".", "the path to the plugin")
 	rootCmd.AddCommand(pushCmd)
 }

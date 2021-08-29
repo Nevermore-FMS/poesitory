@@ -59,6 +59,6 @@ var pullCmd = &cobra.Command{
 }
 
 func init() {
-	pullCmd.Flags().StringVar(&path, "path", "", "path to place the plugin (defaults to ./pluginname)")
+	pullCmd.Flags().StringVar(&path, "path", "", "path to place the plugin")
 	rootCmd.AddCommand(pullCmd)
 }
