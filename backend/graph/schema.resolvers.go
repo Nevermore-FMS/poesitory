@@ -24,6 +24,9 @@ func (r *mutationResolver) CreatePlugin(ctx context.Context, name string, typeAr
 			Successful: false,
 		}, auth.ErrNoPermissions
 	}
+	if ok, _ := regexp.MatchString("^[a-z-]+$", name); !ok {
+		return nil, errors.New("invalid name (only lowercase letters and '-' allowed)")
+	}
 	id, err := database.CreatePlugin(name, typeArg, user.ID)
 	if err != nil {
 		return &model.MutatePluginPayload{
@@ -42,10 +45,12 @@ func (r *mutationResolver) UploadPluginVersion(ctx context.Context, id string, v
 		return nil, errors.New("plugin does not exist")
 	}
 	user := auth.UserForContext(ctx)
-	if user == nil || plugin.OwnerID != user.ID {
+	userAuthed := user != nil && plugin.OwnerID == user.ID
+	tPl := auth.PluginForContext(ctx)
+	pluginAuthed := tPl != nil && plugin.ID == tPl.ID
+	if !pluginAuthed && !userAuthed {
 		return nil, auth.ErrNoPermissions
 	}
-	//TODO Allow upload tokens
 
 	if ok, _ := regexp.MatchString("^[A-Z-]+$", channel); !ok {
 		return nil, errors.New("invalid channel (only uppercase letters and '-' allowed)")
@@ -70,7 +75,7 @@ func (r *mutationResolver) UploadPluginVersion(ctx context.Context, id string, v
 			}
 		}
 		if !isNewVersion {
-			return nil, errors.New("version must be greater than the latest version in desired current channel")
+			return nil, errors.New("version must be greater than the latest version in desired channel")
 		}
 	}
 
@@ -78,7 +83,7 @@ func (r *mutationResolver) UploadPluginVersion(ctx context.Context, id string, v
 		ID:         id,
 		Name:       plugin.Name,
 		PluginType: plugin.Type,
-		Version:    version,
+		Version:    semVer,
 		Channel:    channel,
 	})
 	return &model.UploadPayload{

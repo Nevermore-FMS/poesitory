@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -17,8 +18,13 @@ type Token struct {
 var SelfUrl *url.URL
 
 func init() {
+	selfUri := envFallback("POESITORY_BASE_URI", "localhost:8080")
 	var err error
-	SelfUrl, err = url.Parse(envFallback("POESITORY_BASE_URL", "http://localhost:8080"))
+	if os.Getenv("POESITORY_HTTPS") == "true" {
+		SelfUrl, err = url.Parse(fmt.Sprintf("https://%s", selfUri))
+	} else {
+		SelfUrl, err = url.Parse(fmt.Sprintf("https://%s", selfUri))
+	}
 	if err != nil {
 		log.Fatal(err)
 	}

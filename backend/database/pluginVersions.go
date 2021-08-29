@@ -2,6 +2,8 @@ package database
 
 import (
 	"database/sql"
+	"errors"
+	"strings"
 
 	"github.com/Nevermore-FMS/poesitory/backend/graph/model"
 	"github.com/huandu/go-sqlbuilder"
@@ -91,4 +93,22 @@ func GetLatestPluginVersionForPlugin(pluginID string, channel string) *model.Nev
 	}
 
 	return &pv
+}
+
+func CreatePluginVersion(pluginID string, hash string, major, minor, patch int, channel string, readme string) (string, error) {
+	id := node.Generate().String()
+	q, args := sqlbuilder.InsertInto("plugin_versions").
+		Cols("id", "plugin", "hash", "major", "minor", "patch", "channel", "readme").
+		Values(id, pluginID, hash, major, minor, patch, channel, readme).
+		Build()
+
+	_, err := db.Exec(q, args...)
+	if err != nil {
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			return "", errors.New("plugin does not exist")
+		}
+		panic(err)
+	}
+
+	return id, nil
 }

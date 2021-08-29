@@ -60,7 +60,7 @@ func ParseStringIdentifier(str string) (*PluginVersionIdentifier, error) {
 		if err != nil {
 			return nil, err
 		}
-		identifier.Version = semVer
+		identifier.Version = &semVer
 	}
 
 	if len(channel) > 0 {
@@ -75,24 +75,24 @@ func ParseStringIdentifier(str string) (*PluginVersionIdentifier, error) {
 	return &identifier, nil
 }
 
-func ParseVersion(vstring string) (*PluginSemVer, error) {
+func ParseVersion(vstring string) (PluginSemVer, error) {
 	if ok, _ := regexp.MatchString("^\\d+.\\d+.\\d+$", vstring); !ok {
-		return nil, errors.New("invalid version")
+		return PluginSemVer{}, errors.New("invalid version")
 	}
 	vs := strings.Split(vstring, ".")
 	major, err := strconv.Atoi(vs[0])
 	if err != nil {
-		return nil, err
+		return PluginSemVer{}, err
 	}
 	minor, err := strconv.Atoi(vs[1])
 	if err != nil {
-		return nil, err
+		return PluginSemVer{}, err
 	}
 	patch, err := strconv.Atoi(vs[2])
 	if err != nil {
-		return nil, err
+		return PluginSemVer{}, err
 	}
-	return &PluginSemVer{
+	return PluginSemVer{
 		Major: major,
 		Minor: minor,
 		Patch: patch,

@@ -2,9 +2,11 @@ package cdn
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
-	"net/url"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -13,14 +15,27 @@ import (
 var client *minio.Client
 
 func init() {
-	endpoint, secure := decodeUrl(envFallback("DEV_CDN_URI", os.Getenv("POESITORY_CDN_URI")))
+	endpoint := envFallback("DEV_CDN_URI", os.Getenv("POESITORY_CDN_URI"))
+	secure := os.Getenv("POESITORY_HTTPS") == "true"
 	accessKeyID := envFallback("DEV_CDN_USER", "poesitory")
 	secretAccessKey := envFallback("DEV_CDN_KEY", os.Getenv("POESITORY_SECRET"))
 
+	var transport http.RoundTripper
+	if os.Getenv("POESITORY_DEV_INSECURE") == "true" {
+		log.Println("WARNING: Running in DEV INSECURE mode")
+		transport = &http.Transport{
+			MaxIdleConns:       10,
+			IdleConnTimeout:    30 * time.Second,
+			DisableCompression: true,
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+		}
+	}
+
 	var err error
 	client, err = minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: secure,
+		Creds:     credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure:    secure,
+		Transport: transport,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -40,16 +55,6 @@ func initBuckets() {
 			log.Fatal(err)
 		}
 	}
-}
-
-func decodeUrl(urlStr string) (endpoint string, secure bool) {
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	secure = parsedURL.Scheme == "https"
-	endpoint = parsedURL.Host + parsedURL.Path
-	return
 }
 
 func envFallback(env string, fallback string) string {

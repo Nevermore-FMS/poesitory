@@ -7,14 +7,27 @@ services:
         environment: 
             - GITHUB_CLIENT_ID
             - GITHUB_CLIENT_SECRET
-            - POESITORY_BASE_URL
+            - POESITORY_BASE_URI
             - POESITORY_CDN_URI
             - POESITORY_SECRET
+            - POESITORY_DEV_INSECURE
+            - POESITORY_HTTPS=true
+        labels: 
+            traefik.enable: true
+
+            traefik.http.routers.backend.rule: "(Host(`${POESITORY_BASE_URI}`) && PathPrefix(`/api`))"
+            traefik.http.routers.backend.tls.certResolver: "${POESITORY_CERTRESOLVER:-}"
+            traefik.http.routers.backend.entryPoints: https
+
+            traefik.http.middlewares.backend-redirect.redirectscheme.scheme: https
+            traefik.http.middlewares.backend-redirect.redirectscheme.permanent: true
+
+            traefik.http.routers.backend-redirect.rule: "(Host(`${POESITORY_BASE_URI}`) && PathPrefix(`/api`))"
+            traefik.http.routers.backend-redirect.middlewares: backend-redirect
+            traefik.http.routers.backend-redirect.entryPoints: http
         depends_on:
             - db
             - cdn
-        ports: 
-            - 8080
 
     db:
         build: 
@@ -22,11 +35,9 @@ services:
             dockerfile: Dockerfile.db
         restart: always
         environment: 
-        - POSTGRES_PASSWORD=${POESITORY_SECRET}
+            - POSTGRES_PASSWORD=${POESITORY_SECRET}
         volumes:
-        - dbdata:/var/lib/postgresql/data
-        ports: 
-            - 5432
+            - dbdata:/var/lib/postgresql/data
 
     cdn:
         image: minio/minio
@@ -36,11 +47,21 @@ services:
         environment: 
             - MINIO_ROOT_USER=poesitory
             - MINIO_ROOT_PASSWORD=${POESITORY_SECRET}
-        ports: 
-            - 9000
-            - 9001
-        command: ["server", "--console-address", ":9001", "/data"]
+            - MINIO_BROWSER=off
+        labels: 
+            traefik.enable: true
 
+            traefik.http.routers.cdn.rule: "Host(`${POESITORY_CDN_URI}`)"
+            traefik.http.routers.cdn.tls.certResolver: "${POESITORY_CERTRESOLVER:-}"
+            traefik.http.routers.cdn.entryPoints: https
+
+            traefik.http.middlewares.cdn-redirect.redirectscheme.scheme: https
+            traefik.http.middlewares.cdn-redirect.redirectscheme.permanent: true
+
+            traefik.http.routers.cdn-redirect.rule: "Host(`${POESITORY_CDN_URI}`)"
+            traefik.http.routers.cdn-redirect.middlewares: cdn-redirect
+            traefik.http.routers.cdn-redirect.entryPoints: http
+        command: ["server", "/data"]
 
     migrate:
         build: migrations
@@ -49,8 +70,26 @@ services:
         restart: on-failure
         command: [ "-path", ".", "-database", "postgres://postgres:${POESITORY_SECRET}@db:5432/poesitory?sslmode=disable", "up" ]
 
+    proxy:
+        image: traefik:v2.5
+        restart: always
+        command: 
+            - "--providers.docker.exposedByDefault=false"
+            - "--entryPoints.http.address=:80"
+            - "--entryPoints.https.address=:443"
+            - "--certificatesresolvers.cre.acme.httpchallenge=true"
+            - "--certificatesresolvers.cre.acme.httpchallenge.entrypoint=http"
+            - "--certificatesresolvers.cre.acme.caserver=${POESITORY_CASERVER:-https://acme-v02.api.letsencrypt.org/directory}"
+            - "--certificatesresolvers.cre.acme.email=${POESITORY_CA_EMAIL:-}"
+            - "--certificatesresolvers.cre.acme.storage=/traefik-certs/acme.json"
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes: 
+            - traefik-certs:/traefik-certs
+            - /var/run/docker.sock:/var/run/docker.sock
+
 volumes:
     dbdata:
-      external: true
     cdndata:
-        external: true
+    traefik-certs:

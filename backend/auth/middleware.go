@@ -66,7 +66,7 @@ func UserForContext(ctx context.Context) *model.User {
 }
 
 func PluginForContext(ctx context.Context) *model.NevermorePlugin {
-	raw, ok := ctx.Value(userCtxKey).(*model.NevermorePlugin)
+	raw, ok := ctx.Value(pluginCtxKey).(*model.NevermorePlugin)
 	if !ok {
 		return nil
 	}
