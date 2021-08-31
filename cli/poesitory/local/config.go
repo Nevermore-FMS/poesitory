@@ -15,12 +15,14 @@ const (
 )
 
 type NevermoreJson struct {
-	Name        string              `json:"name"`
-	Author      string              `json:"author"`
-	Email       string              `json:"email"`
-	Url         string              `json:"url"`
-	PluginType  NevermorePluginType `json:"pluginType"`
-	Permissions []string            `json:"permissions"`
+	Name         string              `json:"name"`
+	Author       string              `json:"author"`
+	Email        string              `json:"email"`
+	Url          string              `json:"url"`
+	PluginType   NevermorePluginType `json:"pluginType"`
+	Permissions  []string            `json:"permissions"`
+	PluginPath   string              `json:"pluginPath"`
+	FrontendPath string              `json:"frontendPath"`
 }
 
 type PackageJson struct {

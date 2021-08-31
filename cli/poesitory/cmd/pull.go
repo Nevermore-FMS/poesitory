@@ -32,7 +32,7 @@ var pullCmd = &cobra.Command{
 			return err
 		}
 		if pluginVersion == nil || pluginVersion.Plugin == nil {
-			return errors.New("unable to locate plugin on poesitory")
+			return errors.New("unable to locate plugin version on poesitory")
 		}
 		if pluginVersion.DownloadUrl == nil {
 			return errors.New("unable to obtain download url")

@@ -10,11 +10,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-func UploadUrl(url string, data []byte) error {
-	resp, err := http.Post(url, "application/gzip", bytes.NewReader(data))
+func UploadUrl(url string, data io.Reader) error {
+	resp, err := http.Post(url, "application/gzip", data)
 	if err != nil {
 		return err
 	}
@@ -29,7 +28,7 @@ func UploadUrl(url string, data []byte) error {
 	return nil
 }
 
-func CreateTarGz(basePath string) ([]byte, error) {
+func CreateTarGz(basePath string, include []string) (io.Reader, error) {
 	if _, err := os.Stat(basePath); err != nil {
 		return nil, fmt.Errorf("unable to tar files - %v", err.Error())
 	}
@@ -39,43 +38,34 @@ func CreateTarGz(basePath string) ([]byte, error) {
 	gzw := gzip.NewWriter(writer)
 	tw := tar.NewWriter(gzw)
 
-	err := filepath.Walk(basePath, func(file string, fi os.FileInfo, err error) error {
+	for _, filePath := range include {
+		path := filepath.Join(basePath, filePath)
+		fi, err := os.Stat(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
 		if !fi.Mode().IsRegular() {
-			return nil
+			return nil, fmt.Errorf("path %s is not a file", path)
 		}
-
 		header, err := tar.FileInfoHeader(fi, fi.Name())
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		header.Name = strings.TrimPrefix(strings.Replace(file, basePath, "", -1), string(filepath.Separator))
-
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-
-		f, err := os.Open(file)
+		f, err := os.Open(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
+		header.Name = filePath
+		if err := tw.WriteHeader(header); err != nil {
+			return nil, err
+		}
 		if _, err := io.Copy(tw, f); err != nil {
-			return err
+			return nil, err
 		}
-
-		f.Close() //defering would cause each file close to wait until all operations have completed.
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		f.Close()
 	}
+
 	tw.Close()
 	gzw.Close()
-	return writer.Bytes(), nil
+	return writer, nil
 }
