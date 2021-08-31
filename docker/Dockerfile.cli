@@ -13,4 +13,4 @@ COPY . .
 
 RUN go install
 
-CMD [ "poesitory" ]
+ENTRYPOINT [ "poesitory" ]
