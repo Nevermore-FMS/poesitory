@@ -1,12 +1,15 @@
+#CONTEXT located at ../cli/poesitory
+
 FROM golang:alpine
 
 WORKDIR /app
 
-COPY cli/poesitory/go.mod cli/poesitory/go.sum ./
-
+# Fetch dependencies
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY cli/poesitory/* ./
+
+COPY . .
 
 RUN go install
 
