@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"errors"
+	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 )
 
 //flags
@@ -19,7 +21,8 @@ var rootCmd = &cobra.Command{
 	CompletionOptions: cobra.CompletionOptions{
 		DisableDefaultCmd: true,
 	},
-	Version: "0.1.0",
+	Version:           "0.1.0",
+	DisableAutoGenTag: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var authenticationMethods = 0
 		if len(userToken) > 0 {
@@ -46,4 +49,11 @@ func init() {
 
 func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
+}
+
+func GenDocs() {
+	err := doc.GenMarkdownTree(rootCmd, "./docs")
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -58,7 +58,7 @@ var pushCmd = &cobra.Command{
 				return err
 			}
 		}
-		pathsToInclude = []string{"package.json", "nevermore.json"}
+		pathsToInclude = []string{"package.json", "nevermore.json", "README.md"}
 		if len(nevermoreJson.FrontendPath) > 0 {
 			pathsToInclude = append(pathsToInclude, nevermoreJson.FrontendPath)
 		}
