@@ -24,7 +24,7 @@ func GetPlugin(name string) (*Plugin, error) {
 		return nil, err
 	}
 	if query.Plugin == nil {
-		return nil, errors.New("unknown error (plugin not present in api response)")
+		return nil, errors.New("plugin does not exist on Poesitory")
 	}
 	return query.Plugin, nil
 }
