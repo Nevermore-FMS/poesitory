@@ -89,6 +89,25 @@ services:
             - traefik-certs:/traefik-certs
             - /var/run/docker.sock:/var/run/docker.sock
 
+    frontend:
+        build: frontend
+        restart: always
+        environment: 
+            NEXT_PUBLIC_API_URL: "https://${POESITORY_BASE_URI}/api/graphql"
+        labels: 
+            traefik.enable: true
+
+            traefik.http.routers.frontend.rule: "(Host(`${POESITORY_BASE_URI}`))"
+            traefik.http.routers.frontend.tls.certResolver: "${POESITORY_CERTRESOLVER:-}"
+            traefik.http.routers.frontend.entryPoints: https
+
+            traefik.http.middlewares.frontend-redirect.redirectscheme.scheme: https
+            traefik.http.middlewares.frontend-redirect.redirectscheme.permanent: true
+
+            traefik.http.routers.frontend-redirect.rule: "(Host(`${POESITORY_BASE_URI}`))"
+            traefik.http.routers.frontend-redirect.middlewares: backend-redirect
+            traefik.http.routers.frontend-redirect.entryPoints: http
+
 volumes:
     dbdata:
     cdndata:
