@@ -1,3 +1,4 @@
+import { GetServerSideProps } from 'next';
 import Head from 'next/head'
 import PluginHorizontalCard from "../../../components/PluginHorizontalCard";
 import { NevermorePlugin, User } from "../../../graphql";
@@ -18,7 +19,7 @@ export default function UserPlugins({ user, plugins }: { user: User, plugins: Ne
             </div>
         </div>
     )
-}
+} 
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
     //const client = initializeApollo()
