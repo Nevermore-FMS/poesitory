@@ -115,6 +115,15 @@ func (r *nevermorePluginVersionResolver) DownloadURL(ctx context.Context, obj *m
 	return cdn.GenDownloadUrl(obj.Hash), nil
 }
 
+func (r *userResolver) OwnedPlugins(ctx context.Context, obj *model.User, page *int) (*model.NevermorePluginPage, error) {
+	plugins, hasNext := database.GetPlugins("", nil, &obj.ID, *page)
+	return &model.NevermorePluginPage{
+		PageNum: *page,
+		HasNext: hasNext,
+		Plugins: plugins,
+	}, nil
+}
+
 // NevermorePlugin returns generated.NevermorePluginResolver implementation.
 func (r *Resolver) NevermorePlugin() generated.NevermorePluginResolver {
 	return &nevermorePluginResolver{r}
@@ -130,6 +139,10 @@ func (r *Resolver) NevermorePluginVersion() generated.NevermorePluginVersionReso
 	return &nevermorePluginVersionResolver{r}
 }
 
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
 type nevermorePluginResolver struct{ *Resolver }
 type nevermorePluginChannelResolver struct{ *Resolver }
 type nevermorePluginVersionResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

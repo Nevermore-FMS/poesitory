@@ -124,6 +124,10 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return auth.UserForContext(ctx), nil
 }
 
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	return database.GetUserByID(id), nil
+}
+
 func (r *queryResolver) SearchPlugins(ctx context.Context, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) (*model.NevermorePluginPage, error) {
 	plugins, hasNext := database.GetPlugins(*search, typeArg, owner, *page)
 	return &model.NevermorePluginPage{

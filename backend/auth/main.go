@@ -23,7 +23,7 @@ func init() {
 	if os.Getenv("POESITORY_HTTPS") == "true" {
 		SelfUrl, err = url.Parse(fmt.Sprintf("https://%s", selfUri))
 	} else {
-		SelfUrl, err = url.Parse(fmt.Sprintf("https://%s", selfUri))
+		SelfUrl, err = url.Parse(fmt.Sprintf("http://%s", selfUri))
 	}
 	if err != nil {
 		log.Fatal(err)

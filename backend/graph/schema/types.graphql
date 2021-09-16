@@ -1,6 +1,7 @@
 type User {
     id: ID!
     username: String!
+    ownedPlugins(page: Int = 1): NevermorePluginPage
 }
 
 type NevermorePlugin {

@@ -16,7 +16,7 @@ var client *minio.Client
 
 func init() {
 	endpoint := envFallback("DEV_CDN_URI", os.Getenv("POESITORY_CDN_URI"))
-	secure := os.Getenv("POESITORY_HTTPS") == "true"
+	secure := envFallback("POESITORY_HTTPS", "true") == "true"
 	accessKeyID := envFallback("DEV_CDN_USER", "poesitory")
 	secretAccessKey := envFallback("DEV_CDN_KEY", os.Getenv("POESITORY_SECRET"))
 

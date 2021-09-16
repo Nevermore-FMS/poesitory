@@ -10,5 +10,5 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/minio/minio-go/v7 v7.0.12 // indirect
 	github.com/rs/cors v1.8.0
-	github.com/vektah/gqlparser/v2 v2.2.0
+	github.com/vektah/gqlparser/v2 v2.1.0
 )

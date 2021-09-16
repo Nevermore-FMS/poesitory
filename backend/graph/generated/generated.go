@@ -41,6 +41,7 @@ type ResolverRoot interface {
 	NevermorePluginChannel() NevermorePluginChannelResolver
 	NevermorePluginVersion() NevermorePluginVersionResolver
 	Query() QueryResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -97,6 +98,7 @@ type ComplexityRoot struct {
 		Plugin        func(childComplexity int, id *string, name *string) int
 		PluginVersion func(childComplexity int, versionIdentifier string) int
 		SearchPlugins func(childComplexity int, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) int
+		User          func(childComplexity int, id string) int
 	}
 
 	UploadPayload struct {
@@ -109,8 +111,9 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		ID       func(childComplexity int) int
-		Username func(childComplexity int) int
+		ID           func(childComplexity int) int
+		OwnedPlugins func(childComplexity int, page *int) int
+		Username     func(childComplexity int) int
 	}
 }
 
@@ -145,9 +148,13 @@ type NevermorePluginVersionResolver interface {
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
+	User(ctx context.Context, id string) (*model.User, error)
 	SearchPlugins(ctx context.Context, search *string, typeArg *model.NevermorePluginType, owner *string, page *int) (*model.NevermorePluginPage, error)
 	PluginVersion(ctx context.Context, versionIdentifier string) (*model.NevermorePluginVersion, error)
 	Plugin(ctx context.Context, id *string, name *string) (*model.NevermorePlugin, error)
+}
+type UserResolver interface {
+	OwnedPlugins(ctx context.Context, obj *model.User, page *int) (*model.NevermorePluginPage, error)
 }
 
 type executableSchema struct {
@@ -417,6 +424,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchPlugins(childComplexity, args["search"].(*string), args["type"].(*model.NevermorePluginType), args["owner"].(*string), args["page"].(*int)), true
 
+	case "Query.user":
+		if e.complexity.Query.User == nil {
+			break
+		}
+
+		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
+
 	case "UploadPayload.url":
 		if e.complexity.UploadPayload.URL == nil {
 			break
@@ -444,6 +463,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.ownedPlugins":
+		if e.complexity.User.OwnedPlugins == nil {
+			break
+		}
+
+		args, err := ec.field_User_ownedPlugins_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.OwnedPlugins(childComplexity, args["page"].(*int)), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -526,6 +557,7 @@ type UploadPayload {
 }`, BuiltIn: false},
 	{Name: "graph/schema/schema.graphql", Input: `type Query {
   me: User
+  user(id: ID!): User
   searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
   pluginVersion(versionIdentifier: String!): NevermorePluginVersion
   plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
@@ -540,6 +572,7 @@ type Mutation {
 	{Name: "graph/schema/types.graphql", Input: `type User {
     id: ID!
     username: String!
+    ownedPlugins(page: Int = 1): NevermorePluginPage
 }
 
 type NevermorePlugin {
@@ -777,6 +810,36 @@ func (ec *executionContext) field_Query_searchPlugins_args(ctx context.Context, 
 		}
 	}
 	args["page"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_User_ownedPlugins_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
 	return args, nil
 }
 
@@ -1775,6 +1838,45 @@ func (ec *executionContext) _Query_me(ctx context.Context, field graphql.Collect
 	return ec.marshalOUser2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_user_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().User(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_searchPlugins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2136,6 +2238,45 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_ownedPlugins(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_User_ownedPlugins_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().OwnedPlugins(rctx, obj, args["page"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.NevermorePluginPage)
+	fc.Result = res
+	return ec.marshalONevermorePluginPage2ᚖgithubᚗcomᚋNevermoreᚑFMSᚋpoesitoryᚋbackendᚋgraphᚋmodelᚐNevermorePluginPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -3599,6 +3740,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_me(ctx, field)
 				return res
 			})
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
+				return res
+			})
 		case "searchPlugins":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -3720,13 +3872,24 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "username":
 			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		case "ownedPlugins":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ownedPlugins(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

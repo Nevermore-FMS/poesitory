@@ -1,5 +1,6 @@
 type Query {
   me: User
+  user(id: ID!): User
   searchPlugins(search: String = "", type: NevermorePluginType, owner: ID, page: Int = 1): NevermorePluginPage
   pluginVersion(versionIdentifier: String!): NevermorePluginVersion
   plugin(id: ID, name: String) : NevermorePlugin # Provide either name or id to retrieve a plugin
