@@ -1,0 +1,12 @@
+.pluginCard {
+    display: flex;
+    justify-content: space-between;
+    color: unset;
+    text-decoration: none;
+    
+    > div {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}

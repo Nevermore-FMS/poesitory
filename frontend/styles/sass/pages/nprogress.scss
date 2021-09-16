@@ -1,0 +1,14 @@
+@import '../colors.scss';
+
+#nprogress .bar {
+    background: $ohms-secondary !important;
+}
+  
+#nprogress .peg {
+    box-shadow: 0 0 10px $ohms-secondary, 0 0 5px $ohms-secondary !important;
+}
+
+#nprogress .spinner-icon {
+    border-top-color: $ohms-secondary !important;
+    border-left-color: $ohms-secondary !important;
+}

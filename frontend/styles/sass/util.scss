@@ -1,0 +1,28 @@
+.outlined {
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: black;
+}
+
+@mixin box-sizing($box-model) {
+    -webkit-box-sizing: $box-model; // Safari <= 5
+       -moz-box-sizing: $box-model; // Firefox <= 19
+            box-sizing: $box-model;
+}
+
+.spread {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    flex-wrap: wrap;
+
+    > * {
+        flex: 1;
+    }
+}
+
+@media (max-width: 992px) {
+    .spread {
+        flex-direction: column;
+    }
+}

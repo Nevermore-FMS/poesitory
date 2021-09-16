@@ -1,0 +1,67 @@
+body {
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Roboto', sans-serif;
+    font-display: swap;
+    display: flex;
+    flex-direction: column;
+}
+
+html, body {
+    height: 100%;
+    line-height: 200%;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+a {
+    color: $ohms-secondary-dark
+}
+
+.button-primary, .button-secondary {
+    color: #ffffff;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 1rem;
+    border: 0;
+    transition: all 0.5s;
+    border-radius: 10px;
+    width: auto;
+    position: relative;
+    white-space: nowrap;
+
+    &:hover {
+        border-radius: 10px;
+        box-shadow: 0px 6px 15px black;
+    }
+}
+
+.button-primary {
+    background: $ohms-primary;
+    &:hover {
+        background: $ohms-primary-dark;
+    }
+}
+
+.button-secondary {
+    background: $ohms-secondary;
+    &:hover {
+        background: $ohms-secondary-dark;
+    }
+}
+
+.button-large {
+    font-size: 1.5em;
+    padding: 1.5rem;
+}
+
+.button-space {
+    margin-top: 50px;
+    margin-bottom: 50px;
+}
+
+img {
+    max-width: 100%;
+}

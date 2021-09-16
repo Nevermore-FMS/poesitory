@@ -1,0 +1,35 @@
+.readmeHeader {
+    width: 100%;
+    border-bottom: 1px solid black;
+    margin-top: 0px;
+}
+
+.detailsHolder {
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: auto;
+    grid-template-areas: 
+    "main"
+    "sidebar";
+}
+
+@media only screen and (min-width: 768px) {
+    .detailsHolder {
+        display: grid;
+        grid-template-columns: 5fr 2fr;
+        grid-template-rows: auto;
+        grid-template-areas: "main sidebar";
+    }
+} 
+
+.detailsMain {
+    grid-area: main;
+}
+
+.detailsSidebar {
+    grid-area: sidebar;
+}
+
+.versionLinks {
+    margin-left: 10px;
+}

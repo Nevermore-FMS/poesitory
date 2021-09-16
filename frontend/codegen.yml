@@ -1,0 +1,7 @@
+overwrite: true
+schema: "https://poesitory.nathankutzan.info/api/graphql"
+generates:
+  graphql.tsx:
+    plugins:
+      - "typescript"
+      - "typescript-react-apollo"

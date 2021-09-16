@@ -1,0 +1,97 @@
+@import '../../styles/sass/colors.scss';
+
+.header {
+    width: 100%;
+    background-color: #263238;
+    color: white;
+}
+
+.desktopHeader, .mobileHeader {
+    display: flex;
+    align-items: center;
+}
+
+.desktopHeader {
+    flex-direction: row;
+    display: none;
+}
+
+.desktopHomeLink {
+    display: inline-flex;
+    align-items: center;
+    color: white;
+    text-decoration: none;
+}
+
+@media (min-width: 1055px) { 
+    .desktopHeader {
+        display: flex;
+    }
+}
+
+.mobileHeader {
+    flex-direction: column;
+    justify-content: center;
+}
+
+@media (min-width: 1055px) { 
+    .mobileHeader {
+        display: none;
+    }
+}
+
+.headerLogo {
+    max-height: 50px;
+    margin: 10px;
+}
+
+.desktopHeaderLinks {
+    margin-left: 50px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.mobileHeaderLinks {
+    border-top: solid $ohms-secondary;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 10px;
+}
+
+.mobileGrowable {
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    width: 100%;
+}
+
+.mobileHeaderAction {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.mobileHeaderAction:hover {
+    cursor: pointer;
+}
+
+.headerLink {
+    text-decoration: none;
+    color: white;
+    font-size: 1.3em;
+    transition: color 0.2s;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.headerLink:hover, .active {
+    color: $ohms-secondary;
+}
+
+.headerText {
+    font-size: larger;
+}
