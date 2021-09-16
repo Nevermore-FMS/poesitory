@@ -33,7 +33,7 @@ export default function Search() {
                 <title>Search | Poesitory</title>
             </Head>
             <h1>Search for Plugins</h1>
-            <TextField containerProps={{ style: { width: "100%" } }} autoFocus={true} placeholder="Plugin Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <TextField containerProps={{ style: { width: "95%" } }} autoFocus={true} placeholder="Plugin Search" value={query} onChange={(e) => setQuery(e.target.value)} />
             <div className={styles.results}>
             {(data?.searchPlugins != null) && (
                 data.searchPlugins.plugins?.map(p => (
