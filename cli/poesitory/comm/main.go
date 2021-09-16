@@ -36,7 +36,7 @@ func init() {
 		headerTransport.underlyingTransport = http.DefaultTransport
 	}
 	httpClient.Transport = headerTransport
-	client = graphql.NewClient(envFallback("POESITORY_ENDPOINT", "https://poesitory.nathankutzan.info/api/graphql"), httpClient)
+	client = graphql.NewClient(envFallback("POESITORY_ENDPOINT", "https://poesitory.edgarallanohms.com/api/graphql"), httpClient)
 }
 
 func envFallback(env, fallback string) string {
