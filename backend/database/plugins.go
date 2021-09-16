@@ -53,7 +53,11 @@ func GetPlugins(search string, pluginType *model.NevermorePluginType, owner *str
 	sb := pluginStruct.SelectFrom("plugins")
 
 	if len(search) > 0 {
-		sb.Where(fmt.Sprintf("name @@ %s", sb.Var(search)))
+		searchVid := sb.Var(search)
+		sb.Where(sb.Or(
+			fmt.Sprintf("name @@ %v", searchVid),
+			fmt.Sprintf("position(lower(%v) in lower(name)) > 0", searchVid),
+		))
 	}
 	if pluginType != nil {
 		sb.Where(sb.Equal("type", pluginType))
