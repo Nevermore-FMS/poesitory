@@ -14,7 +14,7 @@ export default function PluginVersionDetails({ pluginVersion }: { pluginVersion:
                 <div className={styles.detailsMain}>
                     <div className="card">
                         <p className={styles.readmeHeader}>README</p>
-                        <ReactMarkdown children={pluginVersion.readme || ""} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} />
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{pluginVersion.readme || ""}</ReactMarkdown>
                     </div>
                 </div>
                 <div className={styles.detailsSidebar}>

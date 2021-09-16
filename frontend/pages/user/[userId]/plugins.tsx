@@ -9,7 +9,7 @@ export default function UserPlugins({ user, plugins }: { user: User, plugins: Ne
     return (
         <div className="container">
             <Head>
-                <title>{user.username}'s plugins | Poesitory</title>
+                <title>{user.username}&apos;s plugins | Poesitory</title>
             </Head>
             <h1>Plugins by {user.username}</h1>
             <div className={styles.results}>
