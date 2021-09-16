@@ -10,7 +10,9 @@ export default function PluginHorizontalCard({ plugin }: { plugin: NevermorePlug
                 <div>
                     <p>{plugin.name}</p>
                     <div>Type: <b>{plugin.type}</b></div>
-                    <div>Created by: <b>{plugin.owner?.username}</b></div>
+                    {plugin.owner && (
+                        <div>Created by: <b>{plugin.owner.username}</b></div>
+                    )}
                 </div>
                 <div className={styles.pluginIdentifier}>
                     <p>{plugin.latestFullIdentifier}</p>

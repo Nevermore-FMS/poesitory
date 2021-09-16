@@ -24,9 +24,13 @@ export default function TextField(props: React.DetailedHTMLProps<React.InputHTML
         classes.push("text-input-light")
     }
 
+    const inputProps = {...props}
+    delete inputProps.light
+    delete inputProps.containerProps
+
     return (
         <div className="input-effect" ref={idRef} {...(props.containerProps || {})}>
-            <input {...props} id={id} onChange={onChange} className={classes.join(" ")} type="text" placeholder="" />
+            <input {...inputProps} id={id} onChange={onChange} className={classes.join(" ")} type="text" placeholder="" />
             <label htmlFor={id}>{props.placeholder}</label>
             <span className="focus-border"><i></i></span>
         </div>

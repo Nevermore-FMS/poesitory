@@ -100,6 +100,7 @@ export type Query = {
   plugin?: Maybe<NevermorePlugin>;
   pluginVersion?: Maybe<NevermorePluginVersion>;
   searchPlugins?: Maybe<NevermorePluginPage>;
+  user?: Maybe<User>;
 };
 
 
@@ -121,6 +122,11 @@ export type QuerySearchPluginsArgs = {
   type?: Maybe<NevermorePluginType>;
 };
 
+
+export type QueryUserArgs = {
+  id: Scalars['ID'];
+};
+
 export type UploadPayload = {
   __typename?: 'UploadPayload';
   url: Scalars['String'];
@@ -135,5 +141,11 @@ export type UploadToken = {
 export type User = {
   __typename?: 'User';
   id: Scalars['ID'];
+  ownedPlugins?: Maybe<NevermorePluginPage>;
   username: Scalars['String'];
+};
+
+
+export type UserOwnedPluginsArgs = {
+  page?: Maybe<Scalars['Int']>;
 };

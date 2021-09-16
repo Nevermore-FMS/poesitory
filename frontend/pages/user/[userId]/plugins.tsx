@@ -1,10 +1,12 @@
 import { GetServerSideProps } from 'next';
 import Head from 'next/head'
 import PluginHorizontalCard from "../../../components/PluginHorizontalCard";
-import { NevermorePlugin, User } from "../../../graphql";
+import { QueryUserArgs, User } from "../../../graphql";
+import { addApolloState, initializeApollo } from '../../../lib/apolloClient';
+import { GET_USER_PLUGINS } from '../../../query';
 import styles from "../../../styles/sass/pages/search.module.scss"
 
-export default function UserPlugins({ user, plugins }: { user: User, plugins: NevermorePlugin[] }) {
+export default function UserPlugins({ user }: { user: User }) {
 
     return (
         <div className="container">
@@ -13,7 +15,7 @@ export default function UserPlugins({ user, plugins }: { user: User, plugins: Ne
             </Head>
             <h1>Plugins by {user.username}</h1>
             <div className={styles.results}>
-                {plugins?.map(p => (
+                {user.ownedPlugins?.plugins?.map(p => (
                     <PluginHorizontalCard key={p.id} plugin={p} />
                 ))}
             </div>
@@ -22,10 +24,25 @@ export default function UserPlugins({ user, plugins }: { user: User, plugins: Ne
 } 
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    //const client = initializeApollo()
-    //TODO This page
+    const client = initializeApollo()
 
-    return {
-        notFound: true
+    const result = await client.query<{ user?: User }, QueryUserArgs>({
+        query: GET_USER_PLUGINS,
+        variables: {
+            id: context.params!.userId! as string
+        }
+    })
+
+    if (result.data.user == null) {
+        return {
+            notFound: true
+        }
     }
+
+    return addApolloState(client, {
+        props: {
+            user: result.data.user
+        }
+    })
+    
 }

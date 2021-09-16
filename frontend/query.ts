@@ -43,3 +43,21 @@ query GetPluginVersion($versionIdentifier: String!) {
   }
 }
 `
+
+export const GET_USER_PLUGINS = gql`
+query GetUserPlugins($id: ID!, $page: Int) {
+  user(id: $id) {
+    id
+    username
+    ownedPlugins(page: $page) {
+      hasNext
+      plugins {
+        id
+        name
+        latestFullIdentifier
+        type
+      }
+    }
+  }
+}
+`

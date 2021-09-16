@@ -35,11 +35,11 @@ export default function Search() {
             <h1>Search for Plugins</h1>
             <TextField containerProps={{ style: { width: "95%" } }} autoFocus={true} placeholder="Plugin Search" value={query} onChange={(e) => setQuery(e.target.value)} />
             <div className={styles.results}>
-            {(data?.searchPlugins != null) && (
-                data.searchPlugins.plugins?.map(p => (
-                    <PluginHorizontalCard key={p.id} plugin={p} />
-                ))
-            )}
+                {(data?.searchPlugins != null) && (
+                    data.searchPlugins.plugins?.map(p => (
+                        <PluginHorizontalCard key={p.id} plugin={p} />
+                    ))
+                )}
             </div>
         </div>
     )
