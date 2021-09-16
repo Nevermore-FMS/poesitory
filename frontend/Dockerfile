@@ -6,8 +6,8 @@ RUN npm install
 
 FROM node:14-alpine AS builder
 WORKDIR /app
-COPY . .
 COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm build && npm install --production --ignore-scripts --prefer-offline
 
 FROM node:14-alpine AS runner
