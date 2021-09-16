@@ -18,7 +18,7 @@ Once downloaded, the binary can be run from anywhere. You don’t need to instal
 
 If you would like Poesitory CLI to be accessible from anywhere, you should put it in a directory and add that directory to your PATH
 - On Linux, this is most likely `/usr/local/bin`
-- On Windows, you should create a directory like `C:\Program Files\poesitory\bin`. Then, In PowerShell or your preferred CLI, add the poesitory.exe executable to your PATH by navigating executing the command `set PATH=%PATH%;C:\Program Files\poesitory\bin`. You may need to run this as administrator.
+- On Windows, you should create a directory like `C:\Program Files\poesitory\bin`. Then, In PowerShell or your preferred CLI, add the poesitory.exe executable to your PATH by executing the command `set PATH=%PATH%;C:\Program Files\poesitory\bin`. You may need to run this as administrator.
 
 ### Build and install with Go
 
