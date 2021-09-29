@@ -7,6 +7,8 @@ services:
         environment: 
             - GITHUB_CLIENT_ID
             - GITHUB_CLIENT_SECRET
+            - GITLAB_CLIENT_ID
+            - GITLAB_CLIENT_SECRET
             - POESITORY_BASE_URI
             - POESITORY_CDN_URI
             - POESITORY_SECRET

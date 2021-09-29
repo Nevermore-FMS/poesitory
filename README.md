@@ -29,6 +29,8 @@ A full start-up command might look like this:
 ```bash
 GITHUB_CLIENT_ID=exampleclientid \
 GITHUB_CLIENT_SECRET=exampleclientsecret \
+GITLAB_CLIENT_ID=exampleclientid \
+GITLAB_CLIENT_SECRET=exampleclientsecret \
 POESITORY_BASE_URI=poesitory.edgarallanohms.com \
 POESITORY_CDN_URI=cdn.poesitory.edgarallanohms.com \
 POESITORY_SECRET=examplesecret \
@@ -39,7 +41,7 @@ docker-compose up -d --build
 
 ## Identifiers
 
-Plugins on poesitory use identifiers when pulling. Their structure is as follows:
+Plugins on Poesitory use identifiers when pulling. Their structure is as follows:
 
 ```
 pluginname[#channel][@version]
