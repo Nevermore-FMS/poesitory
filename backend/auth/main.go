@@ -29,6 +29,7 @@ func init() {
 		log.Fatal(err)
 	}
 	initGithub()
+	initGitlab()
 }
 
 func envFallback(env string, fallback string) string {

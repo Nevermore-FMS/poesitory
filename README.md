@@ -14,6 +14,8 @@ Poesitory uses `docker-compose` for easy one command setup. Simply run `docker-c
 |------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
 | GITHUB_CLIENT_ID       | The Client ID used for GITHUB login                                                                                                                                  | Yes      |
 | GITHUB_CLIENT_SECRET   | The Client Secret used for GITHUB login                                                                                                                              | Yes      |
+| GITLAB_CLIENT_ID       | The Client ID used for GITLAB login                                                                                                                                  | Yes      |
+| GITLAB_CLIENT_SECRET   | The Client Secret used for GITLAB login                                                                                                                              | Yes      |
 | POESITORY_BASE_URI     | The hostname that Poesitory will be accessed on                                                                                                                      | Yes      |
 | POESITORY_CDN_URI      | The hostname that Poesitory CDN will be accessed on                                                                                                                  | Yes      |
 | POESITORY_SECRET       | A random string used as an internal secret                                                                                                                           | Yes      |

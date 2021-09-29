@@ -41,6 +41,11 @@ func main() {
 	http.Handle("/api/github/login", auth.GithubLoginHandler())
 	http.Handle("/api/github/callback", auth.GithubCallbackHandler())
 
+	http.Handle("/api/gitlab/login", auth.GitlabLoginHandler())
+	http.Handle("/api/gitlab/callback", auth.GitlabCallbackHandler())
+
+	http.Handle("/api/logout", auth.LogoutHandler())
+
 	http.Handle("/api/upload/", cdn.UploadHandler())
 
 	log.Printf("Server Running on port %s", port)

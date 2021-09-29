@@ -116,3 +116,16 @@ func CreateTokenForUser(id string) (string, error) {
 	}
 	return token, nil
 }
+
+func ExpireTokensForUser(id string) {
+	sb := sqlbuilder.NewUpdateBuilder().Update("user_tokens")
+	sb.Set(sb.Equal("expires_at", time.Now()))
+	sb.Where(sb.GreaterThan("expires_at", time.Now()))
+	sb.Where(sb.Equal("user_id", id))
+
+	q, args := sb.Build()
+	_, err := db.Exec(q, args...)
+	if err != nil {
+		panic(err)
+	}
+}
