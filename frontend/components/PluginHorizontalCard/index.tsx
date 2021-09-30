@@ -3,9 +3,9 @@ import Link from 'next/link'
 
 import styles from "./index.module.scss"
 
-export default function PluginHorizontalCard({ plugin }: { plugin: NevermorePlugin }) {
+export default function PluginHorizontalCard({ plugin, href }: { plugin: NevermorePlugin, href: string }) {
     return (
-        <Link href={`/plugin/${plugin.name}`}>
+        <Link href={href}>
             <a className={["card", styles.pluginCard].join(' ')}>
                 <div>
                     <p>{plugin.name}</p>

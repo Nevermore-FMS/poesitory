@@ -20,7 +20,7 @@ a {
     color: $ohms-secondary-dark
 }
 
-.button-primary, .button-secondary {
+.button-primary, .button-secondary, .button-disabled {
     color: #ffffff;
     cursor: pointer;
     text-decoration: none;
@@ -31,6 +31,10 @@ a {
     width: auto;
     position: relative;
     white-space: nowrap;
+    
+    * {
+        vertical-align: middle;
+    }
 
     &:hover {
         border-radius: 10px;
@@ -51,6 +55,17 @@ a {
         background: $ohms-secondary-dark;
     }
 }
+
+.button-disabled {
+    background: #515a5a;
+    color:   #616a6b;
+    cursor: not-allowed;
+    outline: none;
+  
+    &:hover {
+        box-shadow: 0px 0px 0px black;
+    }
+  }
 
 .button-large {
     font-size: 1.5em;

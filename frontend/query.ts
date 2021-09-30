@@ -61,3 +61,48 @@ query GetUserPlugins($id: ID!, $page: Int) {
   }
 }
 `
+
+export const GET_ME_USERNAME = gql`
+query GetMeUsername {
+  me {
+    id
+    username
+  }
+}
+`
+
+export const GET_ME_PLUGINS = gql`
+query GetMePlugins($page: Int) {
+  me {
+    username
+    ownedPlugins(page: $page) {
+      hasNext
+      pageNum
+      plugins {
+        id
+        name
+        type
+        latestFullIdentifier
+      }
+    }
+  }
+}
+`
+
+export const GET_PLUGIN = gql`
+query GetPlugin($id: ID!) {
+  plugin(id: $id) {
+    id
+    name
+    type
+    latestFullIdentifier
+    owner {
+      id
+    }
+    uploadTokens {
+      id
+      createdAt
+    }
+  }
+}
+`

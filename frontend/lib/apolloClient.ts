@@ -1,19 +1,33 @@
 import { useMemo } from 'react'
+import https from "https"
 import { ApolloClient, HttpLink, InMemoryCache, NormalizedCacheObject } from '@apollo/client'
 import merge from 'deepmerge'
 import isEqual from 'lodash/isEqual'
-import { GetServerSidePropsResult } from 'next'
+import { GetServerSidePropsContext, GetServerSidePropsResult } from 'next'
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-function createApolloClient(): ApolloClient<NormalizedCacheObject> {
+function createApolloClient(cookie?: string): ApolloClient<NormalizedCacheObject> {
+  const enchancedFetch: WindowOrWorkerGlobalScope['fetch'] = (url, init) => {
+    return fetch(url, {
+        ...init,
+        headers: {
+            ...init?.headers,
+            "Cookie": cookie ?? ""
+        },
+    }).then(response => response)
+}
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
     link: new HttpLink({
       uri: process.env.NEXT_PUBLIC_API_URL,
-      credentials: 'same-origin',
+      credentials: "include",
+      fetch: enchancedFetch,
+      fetchOptions: {
+        agent: new https.Agent({ rejectUnauthorized: process.env.NEXT_PUBLIC_DEV_INSECURE === "true" })
+      }
     }),
     cache: new InMemoryCache(),
     defaultOptions: {
@@ -24,8 +38,8 @@ function createApolloClient(): ApolloClient<NormalizedCacheObject> {
   })
 }
 
-export function initializeApollo(initialState: NormalizedCacheObject | null = null) {
-  const _apolloClient = apolloClient ?? createApolloClient()
+export function initializeApollo(context?: GetServerSidePropsContext, initialState: NormalizedCacheObject | null = null) {
+  const _apolloClient = apolloClient ?? createApolloClient(context?.req?.headers?.cookie)
 
   if (initialState) {
     const existingCache = _apolloClient.extract()
@@ -58,6 +72,6 @@ export function addApolloState(client: ApolloClient<NormalizedCacheObject>, page
 
 export function useApollo(pageProps: { [key: string]: any }) {
   const state = pageProps[APOLLO_STATE_PROP_NAME]
-  const store = useMemo(() => initializeApollo(state), [state])
+  const store = useMemo(() => initializeApollo(undefined, state), [state])
   return store
 }

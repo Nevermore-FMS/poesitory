@@ -6,7 +6,6 @@ import { NevermorePluginPage, QuerySearchPluginsArgs } from "../graphql";
 import { SEARCH_PLUGINS } from "../query";
 import Head from 'next/head'
 import styles from "../styles/sass/pages/search.module.scss"
-import { GetServerSideProps } from "next";
 
 export default function Search() {
     const router = useRouter()
@@ -37,7 +36,7 @@ export default function Search() {
             <div className={styles.results}>
                 {(data?.searchPlugins != null) && (
                     data.searchPlugins.plugins?.map(p => (
-                        <PluginHorizontalCard key={p.id} plugin={p} />
+                        <PluginHorizontalCard key={p.id} plugin={p} href={`/plugin/${p.name}`} />
                     ))
                 )}
             </div>

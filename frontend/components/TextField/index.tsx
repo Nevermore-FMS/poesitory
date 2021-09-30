@@ -1,4 +1,4 @@
-import React, { ChangeEvent, ReactElement, Ref, useState } from "react"
+import React, { ChangeEvent, useState } from "react"
 import { useId } from "../../lib/useId"
 
 export default function TextField(props: React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {

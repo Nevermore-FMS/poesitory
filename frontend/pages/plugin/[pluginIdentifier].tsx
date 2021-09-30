@@ -19,7 +19,7 @@ export default function PluginVersionPage({ pluginVersion }: { pluginVersion: Ne
 
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const client = initializeApollo()
+    const client = initializeApollo(context)
 
     const result = await client.query<{ pluginVersion?: NevermorePluginVersion }, QueryPluginVersionArgs>({
         query: GET_PLUGIN_VERSION,

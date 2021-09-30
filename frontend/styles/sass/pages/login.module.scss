@@ -1,0 +1,13 @@
+.buttonHolder {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 30px;
+
+    a {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 10px;
+    }
+}

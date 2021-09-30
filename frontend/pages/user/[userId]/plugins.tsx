@@ -16,7 +16,7 @@ export default function UserPlugins({ user }: { user: User }) {
             <h1>Plugins by {user.username}</h1>
             <div className={styles.results}>
                 {user.ownedPlugins?.plugins?.map(p => (
-                    <PluginHorizontalCard key={p.id} plugin={p} />
+                    <PluginHorizontalCard key={p.id} plugin={p} href={`/plugin/${p.name}`} />
                 ))}
             </div>
         </div>
@@ -24,7 +24,7 @@ export default function UserPlugins({ user }: { user: User }) {
 } 
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const client = initializeApollo()
+    const client = initializeApollo(context)
 
     const result = await client.query<{ user?: User }, QueryUserArgs>({
         query: GET_USER_PLUGINS,

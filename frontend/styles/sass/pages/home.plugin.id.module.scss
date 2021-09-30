@@ -1,0 +1,16 @@
+@import '../colors.scss';
+
+.uploadToken {
+    display: flex;
+    border-bottom: 5px solid $ohms-primary;
+    padding: 10px;
+    button {
+        margin-left: 20px;
+    }
+}
+
+.uploadTokenDetails {
+    display: flex;
+    flex-direction: column;
+    line-height: 0px;
+}
