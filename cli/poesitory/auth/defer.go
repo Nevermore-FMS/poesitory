@@ -8,7 +8,7 @@ func DeferAuthentication(webAuth bool, userToken, uploadToken string) string {
 		return UserAuthentication(userToken)
 	}
 	if len(uploadToken) > 0 {
-		return UserAuthentication(uploadToken)
+		return UploadAuthentication(uploadToken)
 	}
 	return WebAuthentication()
 }

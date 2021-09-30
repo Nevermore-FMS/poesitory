@@ -1,12 +1,14 @@
-@import '../../styles/sass/colors.scss';
+@import '../../styles/ohms-style/scss/colors.scss';
 
 .header {
     width: 100%;
+    min-height: 80px;
     background-color: #263238;
     color: white;
 }
 
 .desktopHeader, .mobileHeader {
+    min-height: 80px;
     display: flex;
     align-items: center;
 }

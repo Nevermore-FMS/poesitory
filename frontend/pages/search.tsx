@@ -1,11 +1,11 @@
 import { useQuery } from "@apollo/client";
 import { useRouter } from "next/dist/client/router";
 import PluginHorizontalCard from "../components/PluginHorizontalCard";
-import TextField from "../components/TextField";
+import TextField from "../styles/ohms-style/react/components/TextField";
 import { NevermorePluginPage, QuerySearchPluginsArgs } from "../graphql";
 import { SEARCH_PLUGINS } from "../query";
 import Head from 'next/head'
-import styles from "../styles/sass/pages/search.module.scss"
+import styles from "../styles/pages/search.module.scss"
 
 export default function Search() {
     const router = useRouter()

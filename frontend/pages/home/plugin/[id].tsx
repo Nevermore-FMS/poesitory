@@ -4,9 +4,11 @@ import Head from 'next/head'
 import { useRouter } from "next/router";
 import { MutatePluginPayload, MutationCreateUploadTokenArgs, MutationDeleteUploadTokenArgs, NevermorePlugin, QueryPluginArgs, User } from "../../../graphql";
 import { addApolloState, initializeApollo } from "../../../lib/apolloClient";
+import { constructLoginRedirect } from "../../../lib/redirect";
 import { CREATE_UPLOAD_TOKEN, DELETE_UPLOAD_TOKEN } from "../../../mutation";
 import { GET_ME_USERNAME, GET_PLUGIN } from "../../../query";
-import styles from "../../../styles/sass/pages/home.plugin.id.module.scss"
+import Button from "../../../styles/ohms-style/react/components/Button";
+import styles from "../../../styles/pages/home.plugin.id.module.scss"
 
 
 export default function MyPluginPage() {
@@ -49,7 +51,7 @@ export default function MyPluginPage() {
                 <div className="warning">Your new upload token is <code>{createTokenData?.createUploadToken}</code>. Be sure to copy it now, as this is the only time you can see it.</div>
             )}
             <div>
-                <button className="button-secondary" onClick={() => createToken()}><span className="material-icons">add</span><span> New</span></button>
+                <Button variant="secondary" onClick={() => createToken()}><span className="material-icons">add</span><span> New</span></Button>
             </div>
             {plugin.uploadTokens?.map(ut => (
                 <div key={ut.id} className={styles.uploadToken}>
@@ -57,7 +59,7 @@ export default function MyPluginPage() {
                         <p>ID: {ut.id}</p>
                         <p>Created At: {new Date(ut.createdAt * 1000).toLocaleString()}</p>
                     </div>
-                    <button className="button-secondary" onClick={() => deleteToken({ variables: { id: ut.id } })}><span className="material-icons">delete</span></button>
+                    <Button variant="secondary" onClick={() => deleteToken({ variables: { id: ut.id } })}><span className="material-icons">delete</span></Button>
                 </div>
             ))}
             <small>Upload tokens can be used in the <a href="https://github.com/Nevermore-FMS/poesitory/blob/main/cli/poesitory/README.md" target="_blank" rel="noreferrer">Poesitory CLI</a> to upload plugins. Useful for CI/CD</small>
@@ -74,12 +76,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     })
 
     if (meResult.data.me == null) {
-        return {
-            redirect: {
-                destination: "/login",
-                permanent: false
-            }
-        }
+        return constructLoginRedirect(`/home/plugin/${context.params!.id! as string}`)
     }
 
     const pluginResult = await client.query<{ plugin?: NevermorePlugin }, QueryPluginArgs>({

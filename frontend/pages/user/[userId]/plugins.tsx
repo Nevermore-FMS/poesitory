@@ -4,7 +4,7 @@ import PluginHorizontalCard from "../../../components/PluginHorizontalCard";
 import { QueryUserArgs, User } from "../../../graphql";
 import { addApolloState, initializeApollo } from '../../../lib/apolloClient';
 import { GET_USER_PLUGINS } from '../../../query';
-import styles from "../../../styles/sass/pages/search.module.scss"
+import styles from "../../../styles/pages/search.module.scss"
 
 export default function UserPlugins({ user }: { user: User }) {
 

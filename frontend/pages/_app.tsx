@@ -2,8 +2,8 @@ import { ApolloProvider } from '@apollo/client'
 import type { AppProps } from 'next/app'
 import Header from '../components/Header'
 import { useApollo } from '../lib/apolloClient'
-import "../styles/sass/main.scss"
-import "../styles/sass/pages/nprogress.scss"
+import "../styles/ohms-style/scss/main.scss"
+import "../styles/pages/nprogress.scss"
 import "../styles/normalize.css"
 import "highlight.js/styles/default.css"
 import Footer from '../components/Footer'

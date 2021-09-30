@@ -1,7 +1,7 @@
 import { useRouter } from 'next/dist/client/router'
 import Head from 'next/head'
-import TextField from "../components/TextField"
-import styles from "../styles/sass/pages/index.module.scss"
+import TextField from "../styles/ohms-style/react/components/TextField"
+import styles from "../styles/pages/index.module.scss"
 
 export default function Home() {
     const router = useRouter()

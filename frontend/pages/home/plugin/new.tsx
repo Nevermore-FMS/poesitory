@@ -3,13 +3,15 @@ import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Select from '../../../components/Select'
-import TextField from '../../../components/TextField'
+import Select from '../../../styles/ohms-style/react/components/Select'
+import TextField from '../../../styles/ohms-style/react/components/TextField'
 import { MutatePluginPayload, MutationCreatePluginArgs, NevermorePluginPage, NevermorePluginType, User } from '../../../graphql'
 import { addApolloState, initializeApollo } from '../../../lib/apolloClient'
 import { CREATE_PLUGIN } from '../../../mutation'
 import { GET_ME_USERNAME } from '../../../query'
-import styles from "../../../styles/sass/pages/home.plugin.new.module.scss"
+import styles from "../../../styles/pages/home.plugin.new.module.scss"
+import Button from '../../../styles/ohms-style/react/components/Button'
+import { constructLoginRedirect } from '../../../lib/redirect'
 
 export default function NewPluginPage() {
     const client = useApolloClient()
@@ -53,7 +55,7 @@ export default function NewPluginPage() {
                     <option value="GAME">Game</option>
                     <option value="NETWORK_CONFIGURATOR">Network Configurator</option>
                 </Select>
-                <button disabled={saving} className={saving ? "button-disabled" : "button-secondary"} onClick={createPlugin}>Create Plugin</button>
+                <Button variant="secondary" disabled={saving} onClick={createPlugin}>Create Plugin</Button>
             </div>
         </div>
     )
@@ -67,12 +69,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     })
 
     if (result.data.me == null) {
-        return {
-            redirect: {
-                destination: "/login",
-                permanent: false
-            }
-        }
+        return constructLoginRedirect("/home/plugin/new")
     }
 
     return addApolloState(client, {
