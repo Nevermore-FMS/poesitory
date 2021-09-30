@@ -6,6 +6,8 @@ The Plugin repository for Nevermore FMS
 
 ## Running locally
 
+**BE SURE TO CLONE WITH `--recursive` !**
+
 Poesitory uses `docker-compose` for easy one command setup. Simply run `docker-compose up -d --build` in this directory with proper environment variables set (see below) to spin up a poesitory environment.
 
 ### Environment variables
