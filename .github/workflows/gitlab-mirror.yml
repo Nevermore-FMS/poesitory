@@ -1,0 +1,13 @@
+name: Gitlab Mirroring
+
+on: [push, delete]
+
+jobs:
+  to_gitlab:
+    steps:
+      - uses: actions/checkout@v1
+      - uses: spyoungtech/mirror-action@master
+        with:
+          REMOTE: 'https://gitlab.com/edgar-allan-ohms/poesitory.git'
+          GIT_USERNAME: ${{ secrets.GITLAB_USERNAME }}
+          GIT_PASSWORD: ${{ secrets.GITLAB_PASSWORD }}
