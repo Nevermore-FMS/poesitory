@@ -18,3 +18,4 @@ jobs:
         ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         ssh_user: root
         docker_compose_filename: docker-compose.yml
+        docker_compose_prefix: poesitory
