@@ -9,6 +9,7 @@ deploy-prod:
     - poesitory-prod
   image: docker/compose:latest
   variables:
+    GIT_SUBMODULE_STRATEGY: recursive
     POESITORY_BASE_URI: "poesitory.edgarallanohms.com"
     POESITORY_CDN_URI: "cdn.poesitory.edgarallanohms.com"
     POESITORY_CERTRESOLVER: cre
