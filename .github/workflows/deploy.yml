@@ -1,0 +1,21 @@
+name: Deploy to poesitory.edgarallanohms.com
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    - uses: alex-ac/github-action-ssh-docker-compose@master
+      name: Docker-Compose Remote Deployment
+      with:
+        ssh_host: poesitory.edgarallanohms.com
+        ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        ssh_user: root
+        docker_compose_filename: docker-compose.yml
+        docker_compose_prefix: poesitory
