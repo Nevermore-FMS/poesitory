@@ -27,9 +27,9 @@ jobs:
         ssh_public_key: ${{ secrets.DEPLOY_SSH_PUBLIC_KEY }}
         deployment_mode: docker-compose
         copy_stack_file: true
-        deploy_path: /root/my-deployment
-        stack_file_name: docker-compose.yaml
+        deploy_path: /root/poesitory
+        stack_file_name: docker-compose.yml
         keep_files: 5
         args: up -d --build
-        docker_prune: 'false'
-        pull_images_first: 'false'
+        docker_prune: false
+        pull_images_first: false
