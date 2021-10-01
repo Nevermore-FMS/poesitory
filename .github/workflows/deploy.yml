@@ -25,3 +25,4 @@ jobs:
         ssh_host: poesitory.edgarallanohms.com
         ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         ssh_user: root
+        docker_compose_file: docker-compose.yml
