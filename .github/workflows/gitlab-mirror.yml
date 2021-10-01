@@ -4,6 +4,7 @@ on: [push, delete]
 
 jobs:
   to_gitlab:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - uses: spyoungtech/mirror-action@master
