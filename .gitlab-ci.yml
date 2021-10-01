@@ -2,7 +2,7 @@ stages:
   - deploy-prod
 
 deploy-prod:
-  stage: deploy
+  stage: deploy-prod
   rules:
     - if: '$CI_COMMIT_REF_NAME == "master" '
   tags:
