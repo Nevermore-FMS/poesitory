@@ -4,7 +4,7 @@ stages:
 deploy-prod:
   stage: deploy-prod
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" '
+    - if: '$CI_COMMIT_REF_NAME == "main"'
   tags:
     - poesitory-prod
   image: docker/compose:latest
