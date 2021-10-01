@@ -24,5 +24,4 @@ jobs:
       with:
         host: root@poesitory.edgarallanohms.com
         key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-        source: $GITHUB_WORKSPACE/*
         target: /root/poesitory
