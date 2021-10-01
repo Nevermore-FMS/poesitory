@@ -19,9 +19,9 @@ jobs:
       POESITORY_CERTRESOLVER: "cre"
     steps:
     - uses: actions/checkout@v2
-    - name: Start Deployment
-      uses: appleboy/scp-action@master
+    - uses: alex-ac/github-action-ssh-docker-compose@master
+      name: Docker-Compose Remote Deployment
       with:
-        host: root@poesitory.edgarallanohms.com
-        key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-        target: /root/poesitory
+        ssh_host: poesitory.edgarallanohms.com
+        ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        ssh_user: root
