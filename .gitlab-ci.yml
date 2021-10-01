@@ -1,0 +1,16 @@
+stages:
+  - deploy-prod
+
+deploy-prod:
+  stage: deploy
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master" '
+  tags:
+    - poesitory-prod
+  image: docker/compose:latest
+  variables:
+    POESITORY_BASE_URI: "poesitory.edgarallanohms.com"
+    POESITORY_CDN_URI: "cdn.poesitory.edgarallanohms.com"
+    POESITORY_CERTRESOLVER: cre
+  script:
+    - docker-compose up -d --build
