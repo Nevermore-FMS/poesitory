@@ -1,0 +1,28 @@
+name: Deploy to poesitory.edgarallanohms.com
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_CLIENT_ID: ${{ secrets.I_GITHUB_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.I_GITHUB_CLIENT_SECRET }}
+      GITLAB_CLIENT_ID: ${{ secrets.GITLAB_CLIENT_ID }}
+      GITLAB_CLIENT_SECRET: ${{ secrets.GITLAB_CLIENT_SECRET }}
+      POESITORY_CA_EMAIL: ${{ secrets.POESITORY_CA_EMAIL }}
+      POESITORY_SECRET: ${{ secrets.POESITORY_SECRET }}
+      POESITORY_BASE_URI: "poesitory.edgarallanohms.com"
+      POESITORY_CDN_URI: "cdn.poesitory.edgarallanohms.com"
+      POESITORY_CERTRESOLVER: "cre"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Start Deployment
+      uses: appleboy/scp-action@master
+      with:
+        host: root@poesitory.edgarallanohms.com
+        key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        source: $GITHUB_WORKSPACE
+        target: /root/poesitory
