@@ -24,8 +24,8 @@ func (r *mutationResolver) CreatePlugin(ctx context.Context, name string, typeAr
 			Successful: false,
 		}, auth.ErrNoPermissions
 	}
-	if ok, _ := regexp.MatchString("^[a-z-]+$", name); !ok {
-		return nil, errors.New("invalid name (only lowercase letters and '-' allowed)")
+	if ok, _ := regexp.MatchString("^[a-z0-9-]+$", name); !ok {
+		return nil, errors.New("invalid name (only lowercase letters, numbers, and '-' allowed)")
 	}
 	id, err := database.CreatePlugin(name, typeArg, user.ID)
 	if err != nil {
